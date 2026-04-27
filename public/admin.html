@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WFN Admin — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#f4f4f5;color:#0d0d0d;-webkit-font-smoothing:antialiased;height:100vh;overflow:hidden}
+:root{
+  --green:#18E299;--green-50:#f0fdf7;--green-100:#d0fbe9;--green-700:#0a7f55;
+  --gray-50:#fafafa;--gray-100:#f4f4f5;--gray-200:#e4e4e7;--gray-300:#d1d1d6;
+  --gray-400:#a1a1aa;--gray-500:#71717a;--gray-600:#52525b;--gray-700:#3f3f46;
+  --border:rgba(0,0,0,0.07);--border-md:rgba(0,0,0,0.11);
+  --shadow-sm:0 1px 2px rgba(0,0,0,0.06);
+  --shadow-md:0 2px 8px rgba(0,0,0,0.07);
+  --sidebar-w:228px;
+}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:var(--gray-300);border-radius:9999px}
+input,select,textarea{font-family:'Inter',sans-serif}
+button{cursor:pointer;font-family:'Inter',sans-serif}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef, useMemo } = React;
+
+function Icon({ name, size=16, color='currentColor', strokeWidth=1.75 }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    if (ref.current && window.lucide) {
+      ref.current.innerHTML = '';
+      const el = document.createElement('i');
+      el.setAttribute('data-lucide', name);
+      Object.assign(el.style, { width:size+'px', height:size+'px', color });
+      ref.current.appendChild(el);
+      window.lucide.createIcons({ nodes:[el] });
+      const svg = ref.current.querySelector('svg');
+      if (svg) { svg.setAttribute('stroke-width', strokeWidth); svg.style.display='block'; }
+    }
+  }, [name, size, color]);
+  return <span ref={ref} style={{ display:'inline-flex', alignItems:'center', justifyContent:'center' }} />;
+}
+
+function Logo() {
+  return (
+    <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+      <svg width="20" height="20" viewBox="0 0 22 22" fill="none">
+        <path d="M4 18 Q4 6 16 6" stroke="#18E299" strokeWidth="2.5" strokeLinecap="round"/>
+        <path d="M4 18 Q4 10 16 10" stroke="#18E299" strokeWidth="2.5" strokeLinecap="round" opacity="0.6"/>
+        <path d="M4 18 Q4 14 16 14" stroke="#18E299" strokeWidth="2.5" strokeLinecap="round" opacity="0.3"/>
+        <circle cx="16" cy="17" r="2.5" fill="#18E299"/>
+      </svg>
+      <span style={{ fontSize:14, fontWeight:600, letterSpacing:'-0.01em' }}>WFN Admin</span>
+    </div>
+  );
+}
+
+function Badge({ children, color='green' }) {
+  const colors = {
+    green:{ background:'var(--green-50)', color:'var(--green-700)' },
+    red:{ background:'#fef2f2', color:'#b91c1c' },
+    yellow:{ background:'#fffbeb', color:'#92400e' },
+    gray:{ background:'var(--gray-100)', color:'var(--gray-600)' },
+    blue:{ background:'#eff6ff', color:'#1d4ed8' },
+  };
+  return <span style={{ display:'inline-flex', alignItems:'center', padding:'2px 9px', borderRadius:9999, fontSize:10, fontWeight:700, letterSpacing:'0.05em', textTransform:'uppercase', ...colors[color] }}>{children}</span>;
+}
+
+function Btn({ children, onClick, variant='primary', size='sm', style={} }) {
+  const base = { display:'inline-flex', alignItems:'center', gap:6, borderRadius:9999, fontWeight:600, border:'none', transition:'all 0.12s', cursor:'pointer', fontFamily:'Inter,sans-serif' };
+  const variants = {
+    primary:{ background:'var(--green)', color:'#0d0d0d' },
+    outline:{ background:'#fff', color:'var(--gray-700)', border:'1px solid var(--border-md)' },
+    ghost:{ background:'transparent', color:'var(--gray-600)' },
+    danger:{ background:'#fef2f2', color:'#b91c1c', border:'1px solid #fecaca' },
+  };
+  const sizes = { xs:{padding:'5px 10px',fontSize:11}, sm:{padding:'7px 14px',fontSize:12}, md:{padding:'9px 18px',fontSize:13} };
+  return <button onClick={onClick} style={{...base,...variants[variant],...sizes[size],...style}}>{children}</button>;
+}
+
+/* ── Fake data ── */
+const CUSTOMERS = [
+  { id:'C001', name:'Ramesh Shrestha', phone:'9841001001', district:'Nuwakot', plan:'Home Fiber 100Mbps', status:'active', joined:'2024-01-15', balance:'Rs. 1,499', lastPaid:'2025-04-01' },
+  { id:'C002', name:'Sita Tamang', phone:'9841002002', district:'Dhading', plan:'Business 500Mbps', status:'active', joined:'2023-11-08', balance:'Rs. 0', lastPaid:'2025-04-05' },
+  { id:'C003', name:'Bikash Karki', phone:'9841003003', district:'Kathmandu', plan:'Starter 25Mbps', status:'suspended', joined:'2023-06-20', balance:'Rs. 1,798', lastPaid:'2025-02-01' },
+  { id:'C004', name:'Kamala Thapa', phone:'9841004004', district:'Gorkha', plan:'Power User 200Mbps', status:'active', joined:'2024-03-10', balance:'Rs. 0', lastPaid:'2025-04-12' },
+  { id:'C005', name:'Deepak Rai', phone:'9841005005', district:'Rasuwa', plan:'Home Fiber 100Mbps', status:'inactive', joined:'2022-09-01', balance:'Rs. 2,998', lastPaid:'2024-12-01' },
+  { id:'C006', name:'Anita Gurung', phone:'9841006006', district:'Nuwakot', plan:'Gig Speed 1Gbps', status:'active', joined:'2024-07-22', balance:'Rs. 0', lastPaid:'2025-04-03' },
+  { id:'C007', name:'Suresh Adhikari', phone:'9841007007', district:'Dhading', plan:'Business 500Mbps', status:'active', joined:'2023-05-14', balance:'Rs. 0', lastPaid:'2025-04-08' },
+  { id:'C008', name:'Priya Magar', phone:'9841008008', district:'Kathmandu', plan:'Home Fiber 100Mbps', status:'suspended', joined:'2024-02-28', balance:'Rs. 1,499', lastPaid:'2025-03-01' },
+];
+
+const TICKETS = [
+  { id:'T-1042', customer:'Ramesh Shrestha', issue:'Connection drops every evening', status:'open', priority:'high', created:'2025-04-26', district:'Nuwakot' },
+  { id:'T-1041', customer:'Bikash Karki', issue:'Slow speed — getting 5Mbps on 25Mbps plan', status:'in-progress', priority:'medium', created:'2025-04-25', district:'Kathmandu' },
+  { id:'T-1040', customer:'Priya Magar', issue:'Bill payment not reflecting', status:'open', priority:'low', created:'2025-04-24', district:'Kathmandu' },
+  { id:'T-1039', customer:'Deepak Rai', issue:'Connection down for 3 days', status:'resolved', priority:'high', created:'2025-04-20', district:'Rasuwa' },
+  { id:'T-1038', customer:'Sita Tamang', issue:'Need static IP configured', status:'resolved', priority:'medium', created:'2025-04-18', district:'Dhading' },
+  { id:'T-1037', customer:'Anita Gurung', issue:'Router restart loop', status:'in-progress', priority:'high', created:'2025-04-22', district:'Nuwakot' },
+];
+
+const PAYMENTS = [
+  { id:'P-4512', customer:'Kamala Thapa', plan:'Power User 200Mbps', amount:'Rs. 2,199', method:'eSewa', date:'2025-04-12', status:'success' },
+  { id:'P-4511', customer:'Sita Tamang', plan:'Business 500Mbps', amount:'Rs. 3,499', method:'Bank Transfer', date:'2025-04-05', status:'success' },
+  { id:'P-4510', customer:'Anita Gurung', plan:'Gig Speed 1Gbps', amount:'Rs. 5,999', method:'Khalti', date:'2025-04-03', status:'success' },
+  { id:'P-4509', customer:'Suresh Adhikari', plan:'Business 500Mbps', amount:'Rs. 3,499', method:'eSewa', date:'2025-04-08', status:'success' },
+  { id:'P-4508', customer:'Ramesh Shrestha', plan:'Home Fiber 100Mbps', amount:'Rs. 1,499', method:'Cash', date:'2025-04-01', status:'success' },
+  { id:'P-4507', customer:'Deepak Rai', plan:'Home Fiber 100Mbps', amount:'Rs. 1,499', method:'eSewa', date:'2024-12-01', status:'failed' },
+];
+
+/* ── Sidebar ── */
+const NAV_ITEMS = [
+  { key:'dashboard', icon:'layout-dashboard', label:'Dashboard' },
+  { key:'customers', icon:'users', label:'Customers' },
+  { key:'plans', icon:'package', label:'Plans' },
+  { key:'tickets', icon:'message-circle', label:'Support Tickets' },
+  { key:'payments', icon:'credit-card', label:'Payments' },
+  { key:'coverage', icon:'map-pin', label:'Coverage' },
+  { key:'reports', icon:'bar-chart-2', label:'Reports' },
+  { key:'settings', icon:'settings', label:'Settings' },
+];
+
+function Sidebar({ page, setPage }) {
+  return (
+    <div style={{ width:'var(--sidebar-w)', background:'#fff', borderRight:'1px solid var(--border)', height:'100vh', display:'flex', flexDirection:'column', flexShrink:0 }}>
+      <div style={{ padding:'18px 20px', borderBottom:'1px solid var(--border)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+        <Logo />
+        <Badge color="green">ADMIN</Badge>
+      </div>
+      <div style={{ flex:1, padding:'12px 10px', overflowY:'auto', display:'flex', flexDirection:'column', gap:2 }}>
+        {NAV_ITEMS.map(({ key, icon, label }) => (
+          <button key={key} onClick={() => setPage(key)} style={{
+            display:'flex', alignItems:'center', gap:10, padding:'8px 12px', borderRadius:8,
+            background: page===key ? 'var(--green-50)' : 'transparent',
+            border:'none', cursor:'pointer', fontFamily:'Inter,sans-serif',
+            fontSize:13, fontWeight: page===key ? 600 : 500,
+            color: page===key ? 'var(--green-700)' : 'var(--gray-600)',
+            width:'100%', textAlign:'left', transition:'all 0.1s',
+          }}>
+            <Icon name={icon} size={15} color={page===key ? 'var(--green-700)' : 'var(--gray-500)'} />
+            {label}
+            {key==='tickets' && <span style={{ marginLeft:'auto', background:'#ef4444', color:'#fff', borderRadius:9999, fontSize:9, fontWeight:700, padding:'1px 6px' }}>3</span>}
+          </button>
+        ))}
+      </div>
+      <div style={{ padding:'14px 16px', borderTop:'1px solid var(--border)', display:'flex', alignItems:'center', gap:10 }}>
+        <div style={{ width:32, height:32, borderRadius:'50%', background:'var(--green-50)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:600, color:'var(--green-700)', flexShrink:0 }}>RS</div>
+        <div style={{ flex:1, minWidth:0 }}>
+          <div style={{ fontSize:12, fontWeight:600, color:'#0d0d0d' }}>Rajesh Shrestha</div>
+          <div style={{ fontSize:10, color:'var(--gray-500)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>rajesh@worldfibernet.np</div>
+        </div>
+        <a href="index.html" title="View Site"><Icon name="external-link" size={13} color="var(--gray-400)" /></a>
+      </div>
+    </div>
+  );
+}
+
+/* ── Top Bar ── */
+function TopBar({ title, children }) {
+  return (
+    <div style={{ height:56, background:'#fff', borderBottom:'1px solid var(--border)', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 28px', flexShrink:0 }}>
+      <div style={{ fontSize:15, fontWeight:600 }}>{title}</div>
+      <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+        {children}
+        <button style={{ width:34, height:34, borderRadius:9999, border:'1px solid var(--border-md)', background:'#fff', display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <Icon name="bell" size={14} color="var(--gray-500)" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ── Stat Card ── */
+function StatCard({ icon, label, value, change, changeLabel, color='green' }) {
+  const colors = { green:'var(--green-700)', blue:'#1d4ed8', red:'#b91c1c', yellow:'#92400e' };
+  const bgs = { green:'var(--green-50)', blue:'#eff6ff', red:'#fef2f2', yellow:'#fffbeb' };
+  return (
+    <div style={{ background:'#fff', border:'1px solid var(--border)', borderRadius:14, padding:'20px 22px', display:'flex', flexDirection:'column', gap:14, boxShadow:'var(--shadow-sm)' }}>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+        <div style={{ width:38, height:38, borderRadius:10, background:bgs[color], display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <Icon name={icon} size={17} color={colors[color]} />
+        </div>
+        {change !== undefined && (
+          <div style={{ fontSize:11, fontWeight:600, color: change >= 0 ? 'var(--green-700)' : '#b91c1c', display:'flex', alignItems:'center', gap:3 }}>
+            <Icon name={change >= 0 ? 'trending-up' : 'trending-down'} size={11} color={change >= 0 ? 'var(--green-700)' : '#b91c1c'} />
+            {Math.abs(change)}%
+          </div>
+        )}
+      </div>
+      <div>
+        <div style={{ fontFamily:'Geist Mono,monospace', fontSize:26, fontWeight:500, letterSpacing:'-0.02em', color:'#0d0d0d', marginBottom:3 }}>{value}</div>
+        <div style={{ fontSize:12, color:'var(--gray-500)' }}>{label}</div>
+        {changeLabel && <div style={{ fontSize:10, color:'var(--gray-400)', marginTop:3 }}>{changeLabel}</div>}
+      </div>
+    </div>
+  );
+}
+
+/* ── Mini Chart ── */
+function MiniChart({ data, color='#18E299' }) {
+  const max = Math.max(...data);
+  const w = 120, h = 40;
+  const pts = data.map((v,i) => `${(i/(data.length-1))*w},${h - (v/max)*h}`).join(' ');
+  return (
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{ display:'block' }}>
+      <polyline points={pts} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <polygon points={`${pts} ${w},${h} 0,${h}`} fill={color} opacity="0.1" />
+    </svg>
+  );
+}
+
+/* ── DASHBOARD ── */
+function Dashboard() {
+  const monthData = [820, 910, 880, 950, 1020, 1100, 1080, 1150, 1200, 1250, 1320, 1380];
+  const revenueData = [680, 720, 690, 760, 800, 850, 840, 890, 920, 960, 1010, 1050];
+  return (
+    <div style={{ padding:24, display:'flex', flexDirection:'column', gap:20, overflowY:'auto', height:'100%' }}>
+      {/* Stats */}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:14 }}>
+        <StatCard icon="users" label="Total Customers" value="10,284" change={8.2} changeLabel="vs last month" color="green" />
+        <StatCard icon="activity" label="Active Connections" value="9,841" change={4.1} changeLabel="vs last month" color="blue" />
+        <StatCard icon="credit-card" label="Monthly Revenue" value="Rs. 1.24Cr" change={12.3} changeLabel="vs last month" color="green" />
+        <StatCard icon="alert-triangle" label="Open Tickets" value="3" change={-25} changeLabel="vs last week" color="red" />
+      </div>
+      {/* Charts row */}
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:14 }}>
+        {/* Growth chart */}
+        <div style={{ background:'#fff', border:'1px solid var(--border)', borderRadius:14, padding:'20px 22px', gridColumn:'span 2' }}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
+            <div>
+              <div style={{ fontWeight:600, fontSize:14 }}>Subscriber Growth</div>
+              <div style={{ fontSize:11, color:'var(--gray-500)' }}>Last 12 months</div>
+            </div>
+            <div style={{ display:'flex', gap:6 }}>
+              {['1M','3M','6M','1Y'].map((l,i) => (
+                <button key={l} style={{ background: i===3 ? 'var(--green-50)' : 'transparent', border:'1px solid', borderColor: i===3 ? 'rgba(24,226,153,0.3)' : 'var(--border)', borderRadius:9999, padding:'4px 10px', fontSize:10, fontWeight:600, cursor:'pointer', color: i===3 ? 'var(--green-700)' : 'var(--gray-500)', fontFamily:'Inter,sans-serif' }}>{l}</button>
+              ))}
+            </div>
+          </div>
+          {/* Bar chart */}
+          <div style={{ display:'flex', alignItems:'flex-end', gap:6, height:120 }}>
+            {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((m,i) => {
+              const h = (monthData[i] / Math.max(...monthData)) * 100;
+              return (
+                <div key={m} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:4 }}>
+                  <div style={{ width:'100%', borderRadius:'4px 4px 0 0', background: i===11 ? 'var(--green)' : 'var(--green-100)', height:h+'%', transition:'height 0.3s', minHeight:4 }} title={monthData[i]}></div>
+                  <div style={{ fontSize:9, color:'var(--gray-400)', whiteSpace:'nowrap' }}>{m}</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+        {/* District breakdown */}
+        <div style={{ background:'#fff', border:'1px solid var(--border)', borderRadius:14, padding:'20px 22px' }}>
+          <div style={{ fontWeight:600, fontSize:14, marginBottom:4 }}>By District</div>
+          <div style={{ fontSize:11, color:'var(--gray-500)', marginBottom:16 }}>Active subscribers</div>
+          <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+            {[
+              { name:'Kathmandu', count:4820, pct:49 },
+              { name:'Nuwakot', count:2410, pct:24 },
+              { name:'Dhading', count:1570, pct:16 },
+              { name:'Gorkha', count:680, pct:7 },
+              { name:'Rasuwa', count:361, pct:4 },
+            ].map(({ name, count, pct }) => (
+              <div key={name}>
+                <div style={{ display:'flex', justifyContent:'space-between', marginBottom:4 }}>
+                  <span style={{ fontSize:12, color:'var(--gray-700)' }}>{name}</span>
+                  <span style={{ fontSize:11, fontFamily:'Geist Mono,monospace', color:'var(--gray-500)' }}>{count.toLocaleString()}</span>
+                </div>
+                <div style={{ height:4, background:'var(--gray-100)', borderRadius:9999 }}>
+                  <div style={{ height:'100%', width:pct+'%', background:'var(--green)', borderRadius:9999 }}></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      {/* Bottom row */}
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
+        {/* Recent signups */}
+        <div style={{ background:'#fff', border:'1px solid var(--border)', borderRadius:14, padding:'20px 22px' }}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
+            <div style={{ fontWeight:600, fontSize:14 }}>Recent Signups</div>
+            <Badge color="green">THIS WEEK</Badge>
+          </div>
+          <div style={{ display:'flex', flexDirection:'column', gap:1 }}>
+            {CUSTOMERS.slice(0,5).map(c => (
+              <div key={c.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 0', borderBottom:'1px solid var(--border)' }}>
+                <div style={{ width:30, height:30, borderRadius:'50%', background:'var(--green-50)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:600, color:'var(--green-700)', flexShrink:0 }}>
+                  {c.name.split(' ').map(n=>n[0]).join('')}
+                </div>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontSize:12, fontWeight:600, color:'#0d0d0d', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{c.name}</div>
+                  <div style={{ fontSize:10, color:'var(--gray-500)' }}>{c.plan} · {c.district}</div>
+                </div>
+                <Badge color={c.status==='active' ? 'green' : c.status==='suspended' ? 'red' : 'gray'}>{c.status}</Badge>
+              </div>
+            ))}
+          </div>
+        </div>
+        {/* Open tickets */}
+        <div style={{ background:'#fff', border:'1px solid var(--border)', borderRadius:14, padding:'20px 22px' }}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
+            <div style={{ fontWeight:600, fontSize:14 }}>Open Tickets</div>
+            <Badge color="red">3 URGENT</Badge>
+          </div>
+          <div style={{ display:'flex', flexDirection:'column', gap:1 }}>
+            {TICKETS.filter(t => t.status !== 'resolved').map(t => (
+              <div key={t.id} style={{ display:'flex', alignItems:'flex-start', gap:10, padding:'10px 0', borderBottom:'1px solid var(--border)' }}>
+                <div style={{ width:6, height:6, borderRadius:'50%', marginTop:5, flexShrink:0, background: t.priority==='high' ? '#ef4444' : t.priority==='medium' ? '#f59e0b' : 'var(--gray-300)' }}></div>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontSize:12, fontWeight:600, color:'#0d0d0d' }}>{t.id}: {t.customer}</div>
+                  <div style={{ fontSize:11, color:'var(--gray-500)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{t.issue}</div>
+                </div>
+                <Badge color={t.status==='open' ? 'red' : 'yellow'}>{t.status}</Badge>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── CUSTOMERS ── */
+function Customers() {
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState('all');
+  const [selected, setSelected] = useState(null);
+  const shown = CUSTOMERS.filter(c => {
+    const matchSearch = c.name.toLowerCase().includes(search.toLowerCase()) || c.phone.includes(search) || c.id.includes(search);
+    const matchFilter = filter === 'all' || c.status === filter;
+    return matchSearch && matchFilter;
+  });
+  return (
+    <div style={{ padding:24, display:'flex', flexDirection:'column', gap:16, height:'100%', overflowY:'auto' }}>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+        <div style={{ display:'flex', gap:8 }}>
+          <div style={{ position:'relative' }}>
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search customers…" style={{ border:'1px solid var(--border-md)', borderRadius:9999, padding:'8px 12px 8px 34px', fontSize:12, outline:'none', color:'#0d0d0d', width:220, background:'#fff' }} />
+            <span style={{ position:'absolute', left:11, top:'50%', transform:'translateY(-50%)' }}><Icon name="search" size={13} color="var(--gray-400)" /></span>
+          </div>
+          <select value={filter} onChange={e => setFilter(e.target.value)} style={{ border:'1px solid var(--border-md)', borderRadius:9999, padding:'8px 14px', fontSize:12, outline:'none', color:'#0d0d0d', background:'#fff', cursor:'pointer' }}>
+            <option value="all">All Status</option>
+            <option value="active">Active</option>
+            <option value="suspended">Suspended</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
+        <Btn onClick={() => setSelected({ id:'NEW', name:'', phone:'', district:'', plan:'', status:'active', joined:'', balance:'Rs. 0', lastPaid:'' })}>
+          <Icon name="plus" size={13} color="#0d0d0d" /> Add Customer
+        </Btn>
+      </div>
+      <div style={{ background:'#fff', border:'1px solid var(--border)', borderRadius:14, overflow:'hidden' }}>
+        <table style={{ width:'100%', borderCollapse:'collapse', fontSize:12 }}>
+          <thead>
+            <tr style={{ background:'var(--gray-50)', borderBottom:'1px solid var(--border)' }}>
+              {['ID','Name','Phone','District','Plan','Status','Balance','Last Paid','Actions'].map(h => (
+                <th key={h} style={{ padding:'10px 14px', textAlign:'left', fontWeight:600, fontSize:10, letterSpacing:'0.05em', textTransform:'uppercase', color:'var(--gray-500)', whiteSpace:'nowrap' }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {shown.map((c, i) => (
+              <tr key={c.id} style={{ borderBottom:'1px solid var(--border)', background: i%2===0 ? '#fff' : '#fafafa' }}
+                onMouseEnter={e => e.currentTarget.style.background='var(--green-50)'}
+                onMouseLeave={e => e.currentTarget.style.background= i%2===0 ? '#fff' : '#fafafa'}
+              >
+                <td style={{ padding:'11px 14px', fontFamily:'Geist Mono,monospace', color:'var(--gray-500)' }}>{c.id}</td>
+                <td style={{ padding:'11px 14px', fontWeight:600, color:'#0d0d0d' }}>{c.name}</td>
+                <td style={{ padding:'11px 14px', color:'var(--gray-600)' }}>{c.phone}</td>
+                <td style={{ padding:'11px 14px', color:'var(--gray-600)' }}>{c.district}</td>
+                <td style={{ padding:'11px 14px', color:'var(--gray-600)', whiteSpace:'nowrap', maxWidth:160, overflow:'hidden', textOverflow:'ellipsis' }}>{c.plan}</td>
+                <td style={{ padding:'11px 14px' }}><Badge color={c.status==='active'?'green':c.status==='suspended'?'red':'gray'}>{c.status}</Badge></td>
+                <td style={{ padding:'11px 14px', fontFamily:'Geist Mono,monospace', color: c.balance==='Rs. 0' ? 'var(--gray-400)' : '#b91c1c', fontWeight:500 }}>{c.balance}</td>
+                <td style={{ padding:'11px 14px', color:'var(--gray-500)' }}>{c.lastPaid}</td>
+                <td style={{ padding:'11px 14px' }}>
+                  <div style={{ display:'flex', gap:5 }}>
+                    <button onClick={() => setSelected(c)} style={{ background:'var(--gray-100)', border:'none', borderRadius:6, padding:'5px 8px', cursor:'pointer' }}><Icon name="edit-2" size={11} color="var(--gray-600)" /></button>
+                    <button style={{ background:'#fef2f2', border:'none', borderRadius:6, padding:'5px 8px', cursor:'pointer' }}><Icon name="trash-2" size={11} color="#b91c1c" /></button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {/* Modal */}
+      {selected && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.4)', zIndex:300, display:'flex', alignItems:'center', justifyContent:'center' }} onClick={() => setSelected(null)}>
+          <div style={{ background:'#fff', borderRadius:20, padding:32, width:480, boxShadow:'0 24px 80px rgba(0,0,0,0.15)' }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontWeight:600, fontSize:16, marginBottom:20 }}>{selected.id==='NEW' ? 'Add Customer' : `Edit — ${selected.name}`}</div>
+            <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+              {[['Name','name'],['Phone','phone'],['District','district'],['Plan','plan']].map(([label, key]) => (
+                <div key={key}>
+                  <div style={{ fontSize:10, fontWeight:600, letterSpacing:'0.06em', textTransform:'uppercase', color:'var(--gray-500)', marginBottom:5 }}>{label}</div>
+                  <input defaultValue={selected[key]} style={{ width:'100%', border:'1px solid var(--border-md)', borderRadius:9999, padding:'10px 14px', fontSize:13, outline:'none', color:'#0d0d0d' }} />
+                </div>
+              ))}
+            </div>
+            <div style={{ display:'flex', gap:8, marginTop:24, justifyContent:'flex-end' }}>
+              <Btn variant="outline" onClick={() => setSelected(null)}>Cancel</Btn>
+              <Btn onClick={() => setSelected(null)}>Save Changes</Btn>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── PLANS MANAGEMENT ── */
+const ADMIN_PLANS = [
+  { id:'P01', name:'Starter', speed:'25 Mbps', price:'Rs. 899', subscribers:1240, status:'active' },
+  { id:'P02', name:'Home Fiber', speed:'100 Mbps', price:'Rs. 1,499', subscribers:4820, status:'active' },
+  { id:'P03', name:'Power User', speed:'200 Mbps', price:'Rs. 2,199', subscribers:2100, status:'active' },
+  { id:'P04', name:'Business', speed:'500 Mbps', price:'Rs. 3,499', subscribers:890, status:'active' },
+  { id:'P05', name:'Gig Speed', speed:'1 Gbps', price:'Rs. 5,999', subscribers:231, status:'active' },
+  { id:'P06', name:'Legacy Basic', speed:'10 Mbps', price:'Rs. 599', subscribers:0, status:'inactive' },
+];
+
+function Plans() {
+  const [plans, setPlans] = useState(ADMIN_PLANS);
+  return (
+    <div style={{ padding:24, display:'flex', flexDirection:'column', gap:16, height:'100%', overflowY:'auto' }}>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+        <div style={{ fontSize:13, color:'var(--gray-500)' }}>{plans.filter(p=>p.status==='active').length} active plans</div>
+        <Btn><Icon name="plus" size={13} color="#0d0d0d" /> New Plan</Btn>
+      </div>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:14 }}>
+        {plans.map(p => (
+          <div key={p.id} style={{ background:'#fff', border:'1px solid var(--border)', borderRadius:16, padding:'22px 20px', boxShadow:'var(--shadow-sm)', opacity: p.status==='inactive' ? 0.6 : 1 }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:14 }}>
+              <div>
+                <div style={{ fontFamily:'Geist Mono,monospace', fontSize:10, color:'var(--gray-400)', marginBottom:4 }}>{p.id}</div>
+                <div style={{ fontWeight:600, fontSize:16 }}>{p.name}</div>
+              </div>
+              <Badge color={p.status==='active' ? 'green' : 'gray'}>{p.status}</Badge>
+            </div>
+            <div style={{ display:'flex', gap:20, marginBottom:16 }}>
+              <div>
+                <div style={{ fontSize:10, color:'var(--gray-500)', marginBottom:2 }}>SPEED</div>
+                <div style={{ fontFamily:'Geist Mono,monospace', fontSize:16, fontWeight:500, color:'var(--green-700)' }}>{p.speed}</div>
+              </div>
+              <div>
+                <div style={{ fontSize:10, color:'var(--gray-500)', marginBottom:2 }}>PRICE</div>
+                <div style={{ fontFamily:'Geist Mono,monospace', fontSize:16, fontWeight:500 }}>{p.price}/mo</div>
+              </div>
+              <div>
+                <div style={{ fontSize:10, color:'var(--gray-500)', marginBottom:2 }}>SUBSCRIBERS</div>
+                <div style={{ fontFamily:'Geist Mono,monospace', fontSize:16, fontWeight:500 }}>{p.subscribers.toLocaleString()}</div>
+              </div>
+            </div>
+            <div style={{ display:'flex', gap:7 }}>
+              <Btn variant="outline" size="xs"><Icon name="edit-2" size={11} color="var(--gray-600)" /> Edit</Btn>
+              <Btn variant={p.status==='active' ? 'danger' : 'ghost'} size="xs" onClick={() => setPlans(ps => ps.map(x => x.id===p.id ? {...x, status: x.status==='active'?'inactive':'active'} : x))}>
+                {p.status==='active' ? 'Deactivate' : 'Activate'}
+              </Btn>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ── TICKETS ── */
+function Tickets() {
+  const [tickets, setTickets] = useState(TICKETS);
+  const [filter, setFilter] = useState('all');
+  const shown = filter === 'all' ? tickets : tickets.filter(t => t.status === filter);
+  const updateStatus = (id, status) => setTickets(ts => ts.map(t => t.id===id ? {...t,status} : t));
+  return (
+    <div style={{ padding:24, display:'flex', flexDirection:'column', gap:16, height:'100%', overflowY:'auto' }}>
+      <div style={{ display:'flex', gap:6 }}>
+        {['all','open','in-progress','resolved'].map(s => (
+          <button key={s} onClick={() => setFilter(s)} style={{ background: filter===s ? 'var(--green)' : '#fff', border:'1px solid', borderColor: filter===s ? 'transparent' : 'var(--border-md)', borderRadius:9999, padding:'6px 14px', fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'Inter,sans-serif', color: filter===s ? '#0d0d0d' : 'var(--gray-600)', textTransform:'capitalize' }}>
+            {s === 'all' ? `All (${tickets.length})` : s}
+          </button>
+        ))}
+      </div>
+      <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+        {shown.map(t => (
+          <div key={t.id} style={{ background:'#fff', border:'1px solid var(--border)', borderRadius:14, padding:'18px 20px', boxShadow:'var(--shadow-sm)', display:'flex', alignItems:'center', gap:16 }}>
+            <div style={{ width:8, height:8, borderRadius:'50%', flexShrink:0, background: t.priority==='high'?'#ef4444':t.priority==='medium'?'#f59e0b':'var(--gray-300)' }}></div>
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:4 }}>
+                <span style={{ fontFamily:'Geist Mono,monospace', fontSize:11, color:'var(--gray-500)' }}>{t.id}</span>
+                <span style={{ fontWeight:600, fontSize:13, color:'#0d0d0d' }}>{t.customer}</span>
+                <Badge color="gray">{t.district}</Badge>
+              </div>
+              <div style={{ fontSize:13, color:'var(--gray-600)' }}>{t.issue}</div>
+              <div style={{ fontSize:10, color:'var(--gray-400)', marginTop:4 }}>Opened {t.created}</div>
+            </div>
+            <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
+              <Badge color={t.status==='open'?'red':t.status==='in-progress'?'yellow':'green'}>{t.status}</Badge>
+              <select value={t.status} onChange={e => updateStatus(t.id, e.target.value)} style={{ border:'1px solid var(--border-md)', borderRadius:9999, padding:'5px 10px', fontSize:11, outline:'none', background:'#fff', cursor:'pointer', fontFamily:'Inter,sans-serif' }}>
+                <option value="open">Open</option>
+                <option value="in-progress">In Progress</option>
+                <option value="resolved">Resolved</option>
+              </select>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ── PAYMENTS ── */
+function Payments() {
+  return (
+    <div style={{ padding:24, display:'flex', flexDirection:'column', gap:16, height:'100%', overflowY:'auto' }}>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12 }}>
+        <StatCard icon="credit-card" label="Total Revenue (April)" value="Rs. 18.4L" color="green" />
+        <StatCard icon="check-circle" label="Successful Payments" value="1,842" color="blue" />
+        <StatCard icon="x-circle" label="Failed Payments" value="12" color="red" />
+        <StatCard icon="clock" label="Pending Renewal" value="234" color="yellow" />
+      </div>
+      <div style={{ background:'#fff', border:'1px solid var(--border)', borderRadius:14, overflow:'hidden' }}>
+        <div style={{ padding:'14px 20px', borderBottom:'1px solid var(--border)', fontWeight:600, fontSize:13 }}>Recent Transactions</div>
+        <table style={{ width:'100%', borderCollapse:'collapse', fontSize:12 }}>
+          <thead>
+            <tr style={{ background:'var(--gray-50)', borderBottom:'1px solid var(--border)' }}>
+              {['Transaction ID','Customer','Plan','Amount','Method','Date','Status'].map(h => (
+                <th key={h} style={{ padding:'10px 14px', textAlign:'left', fontWeight:600, fontSize:10, letterSpacing:'0.05em', textTransform:'uppercase', color:'var(--gray-500)' }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {PAYMENTS.map((p, i) => (
+              <tr key={p.id} style={{ borderBottom:'1px solid var(--border)', background: i%2===0 ? '#fff' : '#fafafa' }}>
+                <td style={{ padding:'11px 14px', fontFamily:'Geist Mono,monospace', color:'var(--gray-500)', fontSize:11 }}>{p.id}</td>
+                <td style={{ padding:'11px 14px', fontWeight:600 }}>{p.customer}</td>
+                <td style={{ padding:'11px 14px', color:'var(--gray-600)', fontSize:11 }}>{p.plan}</td>
+                <td style={{ padding:'11px 14px', fontFamily:'Geist Mono,monospace', fontWeight:500 }}>{p.amount}</td>
+                <td style={{ padding:'11px 14px', color:'var(--gray-600)' }}>{p.method}</td>
+                <td style={{ padding:'11px 14px', color:'var(--gray-500)' }}>{p.date}</td>
+                <td style={{ padding:'11px 14px' }}><Badge color={p.status==='success'?'green':'red'}>{p.status}</Badge></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+/* ── COVERAGE (admin) ── */
+function CoverageAdmin() {
+  const branches = [
+    { name:'Banasthali HQ', district:'Kathmandu', coverage:'Metropolitan area', subscribers:4820, active:true },
+    { name:'Betrawati', district:'Nuwakot', coverage:'Betrawati town & suburbs', subscribers:1380, active:true },
+    { name:'Trishuli', district:'Nuwakot', coverage:'Trishuli & surrounding', subscribers:1030, active:true },
+    { name:'Baireni', district:'Dhading', coverage:'Baireni & Dhading Besi', subscribers:920, active:true },
+    { name:'Benighat', district:'Dhading', coverage:'Benighat & Malekhu', subscribers:650, active:true },
+    { name:'Gorkha Bazar', district:'Gorkha', coverage:'Gorkha Bazar area', subscribers:280, active:true },
+    { name:'Sindhupalchok', district:'Sindhupalchok', coverage:'Planned', subscribers:0, active:false },
+    { name:'Lamjung', district:'Lamjung', coverage:'Planned', subscribers:0, active:false },
+  ];
+  return (
+    <div style={{ padding:24, display:'flex', flexDirection:'column', gap:14, height:'100%', overflowY:'auto' }}>
+      <div style={{ display:'flex', justifyContent:'flex-end' }}>
+        <Btn><Icon name="plus" size={13} color="#0d0d0d" /> Add Branch</Btn>
+      </div>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12 }}>
+        {branches.map(b => (
+          <div key={b.name} style={{ background:'#fff', border:'1px solid var(--border)', borderRadius:14, padding:'20px 18px', opacity: b.active ? 1 : 0.55, boxShadow:'var(--shadow-sm)' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:10 }}>
+              <div style={{ fontWeight:600, fontSize:14 }}>{b.name}</div>
+              <Badge color={b.active?'green':'gray'}>{b.active?'ACTIVE':'PLANNED'}</Badge>
+            </div>
+            <div style={{ fontSize:11, color:'var(--gray-500)', marginBottom:6 }}>{b.district}</div>
+            <div style={{ fontSize:11, color:'var(--gray-600)', marginBottom:12 }}>{b.coverage}</div>
+            {b.active && (
+              <div style={{ display:'flex', alignItems:'center', gap:5, fontSize:12, fontWeight:600, color:'var(--green-700)' }}>
+                <Icon name="users" size={12} color="var(--green-700)" />
+                {b.subscribers.toLocaleString()} subscribers
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ── REPORTS ── */
+function Reports() {
+  return (
+    <div style={{ padding:24, display:'flex', flexDirection:'column', gap:16, height:'100%', overflowY:'auto' }}>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
+        {[
+          { title:'Revenue Report', desc:'Monthly and annual billing summary by plan and district', icon:'file-text', action:'Generate' },
+          { title:'Subscriber Report', desc:'Active, inactive, and churned customer analysis', icon:'users', action:'Generate' },
+          { title:'Ticket Analytics', desc:'Support ticket resolution times and categories', icon:'message-circle', action:'Generate' },
+          { title:'Coverage Report', desc:'Expansion progress and district penetration rates', icon:'map-pin', action:'Generate' },
+        ].map(({ title, desc, icon, action }) => (
+          <div key={title} style={{ background:'#fff', border:'1px solid var(--border)', borderRadius:16, padding:'24px 22px', display:'flex', gap:16, boxShadow:'var(--shadow-sm)' }}>
+            <div style={{ width:44, height:44, borderRadius:12, background:'var(--green-50)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+              <Icon name={icon} size={18} color="var(--green-700)" />
+            </div>
+            <div style={{ flex:1 }}>
+              <div style={{ fontWeight:600, fontSize:14, marginBottom:5 }}>{title}</div>
+              <div style={{ fontSize:12, color:'var(--gray-600)', lineHeight:1.6, marginBottom:12 }}>{desc}</div>
+              <Btn size="xs" variant="outline">{action} PDF</Btn>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ── SETTINGS ── */
+function Settings() {
+  return (
+    <div style={{ padding:24, height:'100%', overflowY:'auto' }}>
+      <div style={{ maxWidth:640, display:'flex', flexDirection:'column', gap:20 }}>
+        {[
+          { title:'Company Information', fields:[['Company Name','World Fiber Net Pvt. Ltd.'],['Toll Free','16600107555'],['Support Email','betrawaticable2017@gmail.com'],['Address','Banasthali, Kathmandu']] },
+          { title:'Billing Settings', fields:[['Currency','NPR (Rs.)'],['Invoice Day','1st of each month'],['Grace Period','7 days'],['Late Fee','Rs. 100']] },
+          { title:'Notification Settings', fields:[['SMS Alerts','Enabled'],['Email Alerts','Enabled'],['WhatsApp','Disabled']] },
+        ].map(({ title, fields }) => (
+          <div key={title} style={{ background:'#fff', border:'1px solid var(--border)', borderRadius:14, padding:'22px 24px', boxShadow:'var(--shadow-sm)' }}>
+            <div style={{ fontWeight:600, fontSize:14, marginBottom:18, paddingBottom:12, borderBottom:'1px solid var(--border)' }}>{title}</div>
+            <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+              {fields.map(([label, val]) => (
+                <div key={label} style={{ display:'flex', alignItems:'center', gap:16 }}>
+                  <div style={{ fontSize:12, color:'var(--gray-600)', minWidth:160 }}>{label}</div>
+                  <input defaultValue={val} style={{ flex:1, border:'1px solid var(--border-md)', borderRadius:9999, padding:'8px 14px', fontSize:12, outline:'none', color:'#0d0d0d', background:'#fff' }} />
+                </div>
+              ))}
+            </div>
+            <div style={{ marginTop:16, display:'flex', justifyContent:'flex-end' }}>
+              <Btn size="xs">Save Changes</Btn>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ── LOGIN ── */
+function Login({ onLogin }) {
+  const [email, setEmail] = useState('');
+  const [pw, setPw] = useState('');
+  const [err, setErr] = useState(false);
+  const submit = () => {
+    if (email === 'admin@worldfibernet.np' && pw === 'admin123') { onLogin(); }
+    else { setErr(true); setTimeout(() => setErr(false), 2000); }
+  };
+  return (
+    <div style={{ height:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'linear-gradient(155deg,#edfff7,#fff)' }}>
+      <div style={{ background:'#fff', border:'1px solid var(--border)', borderRadius:24, padding:'44px 40px', width:380, boxShadow:'0 8px 40px rgba(0,0,0,0.08)' }}>
+        <div style={{ textAlign:'center', marginBottom:28 }}>
+          <Logo />
+          <div style={{ fontSize:12, color:'var(--gray-500)', marginTop:6 }}>Admin Dashboard</div>
+        </div>
+        <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+          <div>
+            <div style={{ fontSize:10, fontWeight:600, letterSpacing:'0.06em', textTransform:'uppercase', color:'var(--gray-500)', marginBottom:6 }}>Email</div>
+            <input value={email} onChange={e => setEmail(e.target.value)} placeholder="admin@worldfibernet.np" style={{ width:'100%', border:'1px solid var(--border-md)', borderRadius:9999, padding:'11px 16px', fontSize:13, outline:'none', color:'#0d0d0d' }} />
+          </div>
+          <div>
+            <div style={{ fontSize:10, fontWeight:600, letterSpacing:'0.06em', textTransform:'uppercase', color:'var(--gray-500)', marginBottom:6 }}>Password</div>
+            <input type="password" value={pw} onChange={e => setPw(e.target.value)} onKeyDown={e => e.key==='Enter'&&submit()} placeholder="••••••••" style={{ width:'100%', border:`1px solid ${err?'#ef4444':'var(--border-md)'}`, borderRadius:9999, padding:'11px 16px', fontSize:13, outline:'none', color:'#0d0d0d' }} />
+          </div>
+          {err && <div style={{ fontSize:12, color:'#ef4444', textAlign:'center' }}>Invalid credentials. Try admin@worldfibernet.np / admin123</div>}
+          <button onClick={submit} style={{ background:'var(--green)', border:'none', borderRadius:9999, padding:'12px', fontSize:14, fontWeight:600, cursor:'pointer', fontFamily:'Inter,sans-serif', color:'#0d0d0d', marginTop:4 }}>Sign In</button>
+        </div>
+        <div style={{ textAlign:'center', marginTop:16, fontSize:11, color:'var(--gray-400)' }}>Demo: admin@worldfibernet.np / admin123</div>
+      </div>
+    </div>
+  );
+}
+
+/* ── APP ── */
+const PAGES = { dashboard:Dashboard, customers:Customers, plans:Plans, tickets:Tickets, payments:Payments, coverage:CoverageAdmin, reports:Reports, settings:Settings };
+
+function App() {
+  const [authed, setAuthed] = useState(false);
+  const [page, setPage] = useState('dashboard');
+  if (!authed) return <Login onLogin={() => setAuthed(true)} />;
+  const PageComp = PAGES[page] || Dashboard;
+  const titles = { dashboard:'Dashboard', customers:'Customers', plans:'Plan Management', tickets:'Support Tickets', payments:'Payments & Billing', coverage:'Coverage & Branches', reports:'Reports', settings:'Settings' };
+  return (
+    <div style={{ display:'flex', height:'100vh', overflow:'hidden' }}>
+      <Sidebar page={page} setPage={setPage} />
+      <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden' }}>
+        <TopBar title={titles[page]}>
+          <a href="index.html" style={{ fontSize:12, color:'var(--gray-500)', display:'flex', alignItems:'center', gap:5 }}>
+            <Icon name="external-link" size={12} color="var(--gray-400)" /> View Site
+          </a>
+        </TopBar>
+        <div style={{ flex:1, overflow:'hidden' }}>
+          <PageComp />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

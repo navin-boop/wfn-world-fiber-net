@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WFN — My Account</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#f4f4f5;color:#0d0d0d;-webkit-font-smoothing:antialiased;height:100vh;overflow:hidden}
+:root{
+  --green:#18E299;--green-50:#f0fdf7;--green-100:#d0fbe9;--green-700:#0a7f55;
+  --gray-50:#fafafa;--gray-100:#f4f4f5;--gray-200:#e4e4e7;--gray-300:#d1d1d6;
+  --gray-400:#a1a1aa;--gray-500:#71717a;--gray-600:#52525b;--gray-700:#3f3f46;
+  --border:rgba(0,0,0,0.07);--border-md:rgba(0,0,0,0.11);
+  --shadow-sm:0 1px 2px rgba(0,0,0,0.06);
+  --shadow-md:0 2px 8px rgba(0,0,0,0.07);
+  --sidebar-w:220px;
+}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:var(--gray-300);border-radius:9999px}
+input,select,textarea{font-family:'Inter',sans-serif}
+button{cursor:pointer;font-family:'Inter',sans-serif}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+function Icon({ name, size=16, color='currentColor', strokeWidth=1.75 }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    if (ref.current && window.lucide) {
+      ref.current.innerHTML = '';
+      const el = document.createElement('i');
+      el.setAttribute('data-lucide', name);
+      Object.assign(el.style, { width:size+'px', height:size+'px', color });
+      ref.current.appendChild(el);
+      window.lucide.createIcons({ nodes:[el] });
+      const svg = ref.current.querySelector('svg');
+      if (svg) { svg.setAttribute('stroke-width', strokeWidth); svg.style.display='block'; }
+    }
+  }, [name, size, color]);
+  return <span ref={ref} style={{ display:'inline-flex', alignItems:'center', justifyContent:'center' }} />;
+}
+
+function Logo({ dark=false }) {
+  const c = dark ? '#ededed' : '#0d0d0d';
+  return (
+    <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+      <svg width="20" height="20" viewBox="0 0 22 22" fill="none">
+        <path d="M4 18 Q4 6 16 6" stroke="#18E299" strokeWidth="2.5" strokeLinecap="round"/>
+        <path d="M4 18 Q4 10 16 10" stroke="#18E299" strokeWidth="2.5" strokeLinecap="round" opacity="0.6"/>
+        <path d="M4 18 Q4 14 16 14" stroke="#18E299" strokeWidth="2.5" strokeLinecap="round" opacity="0.3"/>
+        <circle cx="16" cy="17" r="2.5" fill="#18E299"/>
+      </svg>
+      <span style={{ fontSize:14, fontWeight:600, letterSpacing:'-0.01em', color:c }}>World Fiber Net</span>
+    </div>
+  );
+}
+
+function Badge({ children, color='green' }) {
+  const colors = {
+    green:{ background:'var(--green-50)', color:'var(--green-700)' },
+    red:{ background:'#fef2f2', color:'#b91c1c' },
+    yellow:{ background:'#fffbeb', color:'#92400e' },
+    gray:{ background:'var(--gray-100)', color:'var(--gray-600)' },
+    blue:{ background:'#eff6ff', color:'#1d4ed8' },
+  };
+  return <span style={{ display:'inline-flex', alignItems:'center', padding:'2px 9px', borderRadius:9999, fontSize:10, fontWeight:700, letterSpacing:'0.05em', textTransform:'uppercase', ...colors[color] }}>{children}</span>;
+}
+
+function Btn({ children, onClick, variant='primary', size='sm', style={} }) {
+  const base = { display:'inline-flex', alignItems:'center', gap:6, borderRadius:9999, fontWeight:600, border:'none', transition:'all 0.12s', cursor:'pointer', fontFamily:'Inter,sans-serif' };
+  const variants = {
+    primary:{ background:'var(--green)', color:'#0d0d0d' },
+    outline:{ background:'#fff', color:'var(--gray-700)', border:'1px solid var(--border-md)' },
+    ghost:{ background:'transparent', color:'var(--gray-600)' },
+    danger:{ background:'#fef2f2', color:'#b91c1c', border:'1px solid #fecaca' },
+  };
+  const sizes = { xs:{padding:'5px 10px',fontSize:11}, sm:{padding:'7px 14px',fontSize:12}, md:{padding:'10px 20px',fontSize:13}, lg:{padding:'13px 28px',fontSize:14} };
+  return <button onClick={onClick} style={{...base,...variants[variant],...sizes[size],...style}}>{children}</button>;
+}
+
+/* ── User data ── */
+const USER = {
+  name: 'Ramesh Shrestha',
+  email: 'ramesh.shrestha@gmail.com',
+  phone: '9841001001',
+  customerId: 'C001',
+  district: 'Nuwakot',
+  address: 'Betrawati-5, Nuwakot',
+  joined: 'January 2024',
+  plan: { name:'Home Fiber', speed:'100 Mbps', price:'Rs. 1,499', renewalDate:'May 1, 2025', status:'active', badge:'POPULAR' },
+};
+
+const BILLING_HISTORY = [
+  { id:'INV-0412', period:'April 2025', amount:'Rs. 1,499', method:'eSewa', date:'2025-04-01', status:'paid' },
+  { id:'INV-0312', period:'March 2025', amount:'Rs. 1,499', method:'Khalti', date:'2025-03-01', status:'paid' },
+  { id:'INV-0212', period:'February 2025', amount:'Rs. 1,499', method:'eSewa', date:'2025-02-01', status:'paid' },
+  { id:'INV-0112', period:'January 2025', amount:'Rs. 1,499', method:'Bank Transfer', date:'2025-01-01', status:'paid' },
+  { id:'INV-1224', period:'December 2024', amount:'Rs. 1,499', method:'eSewa', date:'2024-12-01', status:'paid' },
+];
+
+const MY_TICKETS = [
+  { id:'T-1042', issue:'Connection drops every evening', status:'open', priority:'high', created:'2025-04-26', response:'Our technician will visit on April 28.' },
+  { id:'T-1035', issue:'Slow speed during peak hours', status:'resolved', priority:'medium', created:'2025-03-15', response:'Issue resolved. Node capacity upgraded.' },
+];
+
+/* ── Sidebar ── */
+const NAV_ITEMS = [
+  { key:'overview', icon:'layout-dashboard', label:'Overview' },
+  { key:'plan', icon:'package', label:'My Plan' },
+  { key:'billing', icon:'credit-card', label:'Billing' },
+  { key:'tickets', icon:'message-circle', label:'Support' },
+  { key:'speedtest', icon:'zap', label:'Speed Test' },
+  { key:'profile', icon:'user', label:'My Profile' },
+];
+
+function Sidebar({ page, setPage, onLogout }) {
+  return (
+    <div style={{ width:'var(--sidebar-w)', background:'#fff', borderRight:'1px solid var(--border)', height:'100vh', display:'flex', flexDirection:'column', flexShrink:0 }}>
+      <div style={{ padding:'16px 18px', borderBottom:'1px solid var(--border)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+        <Logo />
+      </div>
+      <div style={{ padding:'12px 8px', flex:1, display:'flex', flexDirection:'column', gap:2 }}>
+        {NAV_ITEMS.map(({ key, icon, label }) => (
+          <button key={key} onClick={() => setPage(key)} style={{
+            display:'flex', alignItems:'center', gap:10, padding:'8px 12px', borderRadius:8,
+            background: page===key ? 'var(--green-50)' : 'transparent',
+            border:'none', cursor:'pointer', fontFamily:'Inter,sans-serif',
+            fontSize:13, fontWeight: page===key ? 600 : 500,
+            color: page===key ? 'var(--green-700)' : 'var(--gray-600)',
+            width:'100%', textAlign:'left', transition:'all 0.1s',
+          }}>
+            <Icon name={icon} size={15} color={page===key ? 'var(--green-700)' : 'var(--gray-500)'} />
+            {label}
+            {key==='tickets' && MY_TICKETS.filter(t=>t.status==='open').length > 0 && (
+              <span style={{ marginLeft:'auto', background:'#ef4444', color:'#fff', borderRadius:9999, fontSize:9, fontWeight:700, padding:'1px 6px' }}>{MY_TICKETS.filter(t=>t.status==='open').length}</span>
+            )}
+          </button>
+        ))}
+      </div>
+      <div style={{ padding:'12px 14px', borderTop:'1px solid var(--border)' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:10 }}>
+          <div style={{ width:32, height:32, borderRadius:'50%', background:'var(--green-50)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:600, color:'var(--green-700)' }}>RS</div>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontSize:12, fontWeight:600 }}>{USER.name}</div>
+            <div style={{ fontSize:10, color:'var(--gray-500)' }}>{USER.customerId}</div>
+          </div>
+        </div>
+        <div style={{ display:'flex', gap:6 }}>
+          <a href="index.html" style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:5, background:'var(--gray-100)', border:'none', borderRadius:8, padding:'7px', fontSize:11, color:'var(--gray-600)', textDecoration:'none', fontWeight:500 }}>
+            <Icon name="home" size={12} color="var(--gray-500)" /> Home
+          </a>
+          <button onClick={onLogout} style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:5, background:'var(--gray-100)', border:'none', borderRadius:8, padding:'7px', fontSize:11, color:'var(--gray-600)', fontFamily:'Inter,sans-serif', fontWeight:500 }}>
+            <Icon name="log-out" size={12} color="var(--gray-500)" /> Sign Out
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TopBar({ title }) {
+  return (
+    <div style={{ height:54, background:'#fff', borderBottom:'1px solid var(--border)', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 24px', flexShrink:0 }}>
+      <div style={{ fontSize:15, fontWeight:600 }}>{title}</div>
+      <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+        <div style={{ fontSize:12, color:'var(--gray-500)', background:'var(--green-50)', border:'1px solid rgba(24,226,153,0.2)', borderRadius:9999, padding:'4px 12px' }}>
+          <span style={{ color:'var(--green-700)', fontWeight:600 }}>ACTIVE</span> · Next renewal May 1, 2025
+        </div>
+        <button style={{ width:32, height:32, borderRadius:9999, border:'1px solid var(--border-md)', background:'#fff', display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <Icon name="bell" size={13} color="var(--gray-500)" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ── OVERVIEW ── */
+function Overview({ setPage }) {
+  const [speedVal, setSpeedVal] = useState(0);
+  useEffect(() => {
+    let v = 0;
+    const t = setInterval(() => { v += 4; if (v > 94) { clearInterval(t); } setSpeedVal(v); }, 40);
+    return () => clearInterval(t);
+  }, []);
+  return (
+    <div style={{ padding:24, overflowY:'auto', height:'100%', display:'flex', flexDirection:'column', gap:20 }}>
+      {/* Welcome banner */}
+      <div style={{ background:'linear-gradient(135deg,#0a7f55,#0d6044)', borderRadius:20, padding:'28px 32px', color:'#fff', display:'flex', justifyContent:'space-between', alignItems:'center', overflow:'hidden', position:'relative' }}>
+        <div style={{ position:'absolute', right:-20, top:-20, width:200, height:200, borderRadius:'50%', background:'rgba(255,255,255,0.04)' }}></div>
+        <div>
+          <div style={{ fontSize:11, fontWeight:600, letterSpacing:'0.08em', textTransform:'uppercase', opacity:0.6, marginBottom:8 }}>WELCOME BACK</div>
+          <div style={{ fontSize:22, fontWeight:600, letterSpacing:'-0.02em', marginBottom:6 }}>Good morning, Ramesh</div>
+          <div style={{ fontSize:13, opacity:0.75 }}>Your connection is active. Everything looks great.</div>
+        </div>
+        <div style={{ display:'flex', gap:24, textAlign:'center' }}>
+          {[['100 Mbps','Your Speed'],['99.5%','Uptime'],['24/7','Support']].map(([v,l]) => (
+            <div key={l}>
+              <div style={{ fontFamily:'Geist Mono,monospace', fontSize:20, fontWeight:500, marginBottom:3 }}>{v}</div>
+              <div style={{ fontSize:10, opacity:0.6, textTransform:'uppercase', letterSpacing:'0.06em' }}>{l}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Quick stats */}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12 }}>
+        {[
+          { icon:'wifi', label:'Connection Status', value:'Online', color:'green', sub:'All systems normal' },
+          { icon:'credit-card', label:'Next Bill', value:'Rs. 1,499', color:'blue', sub:'Due May 1, 2025' },
+          { icon:'message-circle', label:'Open Tickets', value:'1', color:'yellow', sub:'Pending response' },
+          { icon:'calendar', label:'Member Since', value:'Jan 2024', color:'gray', sub:'16 months' },
+        ].map(({ icon, label, value, color, sub }) => {
+          const bgs = { green:'var(--green-50)', blue:'#eff6ff', yellow:'#fffbeb', gray:'var(--gray-100)' };
+          const cs = { green:'var(--green-700)', blue:'#1d4ed8', yellow:'#92400e', gray:'var(--gray-600)' };
+          return (
+            <div key={label} style={{ background:'#fff', border:'1px solid var(--border)', borderRadius:14, padding:'18px 18px', boxShadow:'var(--shadow-sm)', display:'flex', gap:12, alignItems:'flex-start' }}>
+              <div style={{ width:36, height:36, borderRadius:10, background:bgs[color], display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                <Icon name={icon} size={15} color={cs[color]} />
+              </div>
+              <div>
+                <div style={{ fontSize:10, color:'var(--gray-500)', marginBottom:3 }}>{label}</div>
+                <div style={{ fontFamily:'Geist Mono,monospace', fontSize:16, fontWeight:500, color:'#0d0d0d', marginBottom:2 }}>{value}</div>
+                <div style={{ fontSize:10, color:'var(--gray-400)' }}>{sub}</div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Speed gauge + actions */}
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
+        {/* Speed indicator */}
+        <div style={{ background:'#fff', border:'1px solid var(--border)', borderRadius:16, padding:'24px', boxShadow:'var(--shadow-sm)' }}>
+          <div style={{ fontWeight:600, fontSize:14, marginBottom:18 }}>Live Connection</div>
+          <div style={{ display:'flex', gap:24 }}>
+            {[['download','Download',speedVal,'Mbps'],['upload','Upload',Math.round(speedVal*0.95),'Mbps'],['activity','Latency',2,'ms']].map(([icon,label,val,unit]) => (
+              <div key={label} style={{ flex:1, textAlign:'center' }}>
+                <div style={{ width:60, height:60, borderRadius:'50%', border:'3px solid var(--green-100)', margin:'0 auto 10px', display:'flex', alignItems:'center', justifyContent:'center', position:'relative', background:'var(--green-50)' }}>
+                  <svg style={{ position:'absolute', inset:0 }} width="60" height="60" viewBox="0 0 60 60">
+                    <circle cx="30" cy="30" r="26" fill="none" stroke="var(--green)" strokeWidth="3" strokeDasharray={`${(val/100)*163} 163`} strokeLinecap="round" transform="rotate(-90 30 30)" opacity="0.6"/>
+                  </svg>
+                  <Icon name={icon} size={18} color="var(--green-700)" />
+                </div>
+                <div style={{ fontFamily:'Geist Mono,monospace', fontSize:18, fontWeight:500, color:'var(--green-700)' }}>{val}</div>
+                <div style={{ fontSize:10, color:'var(--gray-500)' }}>{label} ({unit})</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ marginTop:16, display:'flex', justifyContent:'center' }}>
+            <Btn size="xs" variant="outline" onClick={() => { setSpeedVal(0); setTimeout(() => { let v=0; const t=setInterval(()=>{v+=4;if(v>94)clearInterval(t);setSpeedVal(v);},40); }, 50); }}>
+              <Icon name="refresh-cw" size={11} color="var(--gray-600)" /> Re-test
+            </Btn>
+          </div>
+        </div>
+        {/* Quick actions */}
+        <div style={{ background:'#fff', border:'1px solid var(--border)', borderRadius:16, padding:'24px', boxShadow:'var(--shadow-sm)' }}>
+          <div style={{ fontWeight:600, fontSize:14, marginBottom:16 }}>Quick Actions</div>
+          <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+            {[
+              { icon:'credit-card', label:'Pay Bill', sub:'Next due May 1', color:'green', action:()=>setPage('billing') },
+              { icon:'trending-up', label:'Upgrade Plan', sub:'Unlock faster speeds', color:'blue', action:()=>setPage('plan') },
+              { icon:'message-circle', label:'Get Support', sub:'Open a ticket', color:'yellow', action:()=>setPage('tickets') },
+              { icon:'zap', label:'Speed Test', sub:'Check your connection', color:'gray', action:()=>setPage('speedtest') },
+            ].map(({ icon, label, sub, color, action }) => {
+              const bgs = { green:'var(--green-50)', blue:'#eff6ff', yellow:'#fffbeb', gray:'var(--gray-100)' };
+              const cs = { green:'var(--green-700)', blue:'#1d4ed8', yellow:'#92400e', gray:'var(--gray-600)' };
+              return (
+                <button key={label} onClick={action} style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 12px', borderRadius:10, border:'1px solid var(--border)', background:'#fafafa', cursor:'pointer', textAlign:'left', transition:'all 0.12s', fontFamily:'Inter,sans-serif' }}
+                  onMouseEnter={e=>{e.currentTarget.style.background='var(--green-50)';e.currentTarget.style.borderColor='rgba(24,226,153,0.2)';}}
+                  onMouseLeave={e=>{e.currentTarget.style.background='#fafafa';e.currentTarget.style.borderColor='var(--border)';}}>
+                  <div style={{ width:32, height:32, borderRadius:8, background:bgs[color], display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                    <Icon name={icon} size={14} color={cs[color]} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize:12, fontWeight:600, color:'#0d0d0d' }}>{label}</div>
+                    <div style={{ fontSize:10, color:'var(--gray-500)' }}>{sub}</div>
+                  </div>
+                  <Icon name="chevron-right" size={13} color="var(--gray-300)" style={{ marginLeft:'auto' }} />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Recent activity */}
+      <div style={{ background:'#fff', border:'1px solid var(--border)', borderRadius:16, padding:'22px 24px', boxShadow:'var(--shadow-sm)' }}>
+        <div style={{ fontWeight:600, fontSize:14, marginBottom:14 }}>Recent Activity</div>
+        <div style={{ display:'flex', flexDirection:'column', gap:1 }}>
+          {[
+            { icon:'check-circle', text:'Payment of Rs. 1,499 received', time:'Apr 1, 2025', color:'green' },
+            { icon:'alert-circle', text:'Support ticket T-1042 opened', time:'Apr 26, 2025', color:'yellow' },
+            { icon:'wifi', text:'Connection stable for 28 days', time:'Mar 30, 2025', color:'green' },
+            { icon:'check-circle', text:'Payment of Rs. 1,499 received', time:'Mar 1, 2025', color:'green' },
+          ].map(({ icon, text, time, color }, i) => {
+            const cs = { green:'var(--green-700)', yellow:'#92400e' };
+            const bgs = { green:'var(--green-50)', yellow:'#fffbeb' };
+            return (
+              <div key={i} style={{ display:'flex', alignItems:'center', gap:12, padding:'11px 0', borderBottom: i < 3 ? '1px solid var(--border)' : 'none' }}>
+                <div style={{ width:30, height:30, borderRadius:8, background:bgs[color], display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                  <Icon name={icon} size={13} color={cs[color]} />
+                </div>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:12, fontWeight:500, color:'#0d0d0d' }}>{text}</div>
+                </div>
+                <div style={{ fontSize:11, color:'var(--gray-400)', whiteSpace:'nowrap' }}>{time}</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── MY PLAN ── */
+function MyPlan() {
+  const [upgrading, setUpgrading] = useState(false);
+  const plans = [
+    { name:'Starter', speed:'25 Mbps', price:'Rs. 899', badge:'BASIC', current:false },
+    { name:'Home Fiber', speed:'100 Mbps', price:'Rs. 1,499', badge:'CURRENT', current:true },
+    { name:'Power User', speed:'200 Mbps', price:'Rs. 2,199', badge:'FIBER+', current:false },
+    { name:'Business', speed:'500 Mbps', price:'Rs. 3,499', badge:'BUSINESS', current:false },
+    { name:'Gig Speed', speed:'1 Gbps', price:'Rs. 5,999', badge:'ENTERPRISE', current:false },
+  ];
+  return (
+    <div style={{ padding:24, overflowY:'auto', height:'100%', display:'flex', flexDirection:'column', gap:18 }}>
+      {/* Current plan card */}
+      <div style={{ background:'linear-gradient(135deg,#0a7f55,#0d6044)', borderRadius:20, padding:'28px 32px', color:'#fff' }}>
+        <div style={{ fontSize:11, fontWeight:600, letterSpacing:'0.08em', textTransform:'uppercase', opacity:0.6, marginBottom:12 }}>CURRENT PLAN</div>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end' }}>
+          <div>
+            <div style={{ fontSize:28, fontWeight:600, letterSpacing:'-0.02em', marginBottom:6 }}>Home Fiber 100 Mbps</div>
+            <div style={{ opacity:0.75, fontSize:14, marginBottom:16 }}>Unlimited data · Free installation · 24/7 support</div>
+            <div style={{ display:'flex', gap:20 }}>
+              {[['Speed','100 Mbps'],['Price','Rs. 1,499/mo'],['Renewal','May 1, 2025'],['Status','Active']].map(([l,v]) => (
+                <div key={l}>
+                  <div style={{ fontSize:10, opacity:0.5, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:3 }}>{l}</div>
+                  <div style={{ fontFamily:'Geist Mono,monospace', fontSize:13, fontWeight:500 }}>{v}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <Btn variant="white" size="md" onClick={() => setUpgrading(true)}>
+            <Icon name="trending-up" size={14} color="#0a7f55" /> Upgrade
+          </Btn>
+        </div>
+      </div>
+      {/* Plan features */}
+      <div style={{ background:'#fff', border:'1px solid var(--border)', borderRadius:16, padding:'22px 24px', boxShadow:'var(--shadow-sm)' }}>
+        <div style={{ fontWeight:600, fontSize:14, marginBottom:16 }}>Plan Details</div>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:16 }}>
+          {[
+            { icon:'wifi', title:'Download Speed', value:'100 Mbps' },
+            { icon:'upload', title:'Upload Speed', value:'100 Mbps' },
+            { icon:'infinity', title:'Data Limit', value:'Unlimited' },
+            { icon:'shield', title:'SLA Uptime', value:'99.5%' },
+            { icon:'server', title:'Static IP', value:'Available (+Rs. 200)' },
+            { icon:'headphones', title:'Support Level', value:'24/7 Phone & Email' },
+          ].map(({ icon, title, value }) => (
+            <div key={title} style={{ display:'flex', gap:12, alignItems:'flex-start', padding:'14px', borderRadius:12, background:'var(--gray-50)', border:'1px solid var(--border)' }}>
+              <div style={{ width:32, height:32, borderRadius:8, background:'var(--green-50)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                <Icon name={icon} size={14} color="var(--green-700)" />
+              </div>
+              <div>
+                <div style={{ fontSize:10, color:'var(--gray-500)', marginBottom:2, textTransform:'uppercase', letterSpacing:'0.05em' }}>{title}</div>
+                <div style={{ fontSize:13, fontWeight:600, color:'#0d0d0d' }}>{value}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      {/* Upgrade modal */}
+      {upgrading && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.4)', zIndex:300, display:'flex', alignItems:'center', justifyContent:'center' }} onClick={() => setUpgrading(false)}>
+          <div style={{ background:'#fff', borderRadius:24, padding:32, width:640, maxHeight:'80vh', overflowY:'auto', boxShadow:'0 24px 80px rgba(0,0,0,0.15)' }} onClick={e=>e.stopPropagation()}>
+            <div style={{ fontWeight:600, fontSize:18, marginBottom:6 }}>Choose a Plan</div>
+            <div style={{ fontSize:13, color:'var(--gray-500)', marginBottom:22 }}>Upgrades take effect within 24 hours. Downgrade at end of billing cycle.</div>
+            <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+              {plans.map(p => (
+                <div key={p.name} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'16px 18px', borderRadius:14, border: p.current ? '1.5px solid var(--green)' : '1px solid var(--border)', background: p.current ? 'var(--green-50)' : '#fff' }}>
+                  <div style={{ display:'flex', gap:14, alignItems:'center' }}>
+                    <div style={{ fontFamily:'Geist Mono,monospace', fontSize:18, fontWeight:500, color: p.current ? 'var(--green-700)' : '#0d0d0d', minWidth:80 }}>{p.speed}</div>
+                    <div>
+                      <div style={{ fontWeight:600, fontSize:13 }}>{p.name}</div>
+                      <div style={{ fontSize:11, color:'var(--gray-500)' }}>{p.price}/month</div>
+                    </div>
+                  </div>
+                  {p.current ? (
+                    <span style={{ fontSize:11, fontWeight:600, color:'var(--green-700)', background:'var(--green)', borderRadius:9999, padding:'4px 12px', color:'#0d0d0d' }}>Current Plan</span>
+                  ) : (
+                    <Btn size="xs" onClick={() => setUpgrading(false)}>Select</Btn>
+                  )}
+                </div>
+              ))}
+            </div>
+            <div style={{ marginTop:20, display:'flex', justifyContent:'flex-end' }}>
+              <Btn variant="outline" onClick={() => setUpgrading(false)}>Cancel</Btn>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── BILLING ── */
+function Billing() {
+  const [method, setMethod] = useState('');
+  const [paying, setPaying] = useState(false);
+  const [paid, setPaid] = useState(false);
+  return (
+    <div style={{ padding:24, overflowY:'auto', height:'100%', display:'flex', flexDirection:'column', gap:16 }}>
+      {/* Due now */}
+      <div style={{ background:'#fff', border:'1px solid var(--border)', borderRadius:16, padding:'22px 24px', boxShadow:'var(--shadow-sm)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+        <div>
+          <div style={{ fontSize:11, fontWeight:700, letterSpacing:'0.07em', textTransform:'uppercase', color:'var(--gray-500)', marginBottom:6 }}>NEXT DUE PAYMENT</div>
+          <div style={{ fontFamily:'Geist Mono,monospace', fontSize:32, fontWeight:500, letterSpacing:'-0.02em', marginBottom:4 }}>Rs. 1,499</div>
+          <div style={{ fontSize:13, color:'var(--gray-600)' }}>Home Fiber 100Mbps · Due May 1, 2025</div>
+        </div>
+        {paid ? (
+          <div style={{ display:'flex', alignItems:'center', gap:8, background:'var(--green-50)', borderRadius:12, padding:'12px 20px', color:'var(--green-700)', fontWeight:600, fontSize:13 }}>
+            <Icon name="check-circle" size={18} color="var(--green-700)" /> Payment Received!
+          </div>
+        ) : (
+          <Btn size="md" onClick={() => setPaying(true)}>
+            <Icon name="credit-card" size={14} color="#0d0d0d" /> Pay Now
+          </Btn>
+        )}
+      </div>
+      {/* Payment methods */}
+      <div style={{ background:'#fff', border:'1px solid var(--border)', borderRadius:16, padding:'22px 24px', boxShadow:'var(--shadow-sm)' }}>
+        <div style={{ fontWeight:600, fontSize:14, marginBottom:14 }}>Payment Methods</div>
+        <div style={{ display:'flex', gap:10 }}>
+          {[['esewa','eSewa','#4CB649'],['khalti','Khalti','#5C2D91'],['bank','Bank Transfer','#1d4ed8'],['cash','Cash at Branch','#92400e']].map(([id,label,color]) => (
+            <button key={id} onClick={() => setMethod(id)} style={{ flex:1, padding:'14px', borderRadius:12, border: method===id ? `1.5px solid ${color}` : '1px solid var(--border)', background: method===id ? '#fafafa' : '#fff', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', gap:6, transition:'all 0.12s' }}>
+              <div style={{ width:36, height:36, borderRadius:10, background: method===id ? color+'20' : 'var(--gray-100)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                <Icon name="credit-card" size={16} color={method===id ? color : 'var(--gray-500)'} />
+              </div>
+              <div style={{ fontSize:11, fontWeight:600, color: method===id ? '#0d0d0d' : 'var(--gray-600)' }}>{label}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+      {/* Billing history */}
+      <div style={{ background:'#fff', border:'1px solid var(--border)', borderRadius:16, overflow:'hidden', boxShadow:'var(--shadow-sm)' }}>
+        <div style={{ padding:'16px 22px', borderBottom:'1px solid var(--border)', fontWeight:600, fontSize:14 }}>Billing History</div>
+        <table style={{ width:'100%', borderCollapse:'collapse', fontSize:12 }}>
+          <thead>
+            <tr style={{ background:'var(--gray-50)', borderBottom:'1px solid var(--border)' }}>
+              {['Invoice','Period','Amount','Method','Date','Status'].map(h => (
+                <th key={h} style={{ padding:'10px 16px', textAlign:'left', fontWeight:600, fontSize:10, letterSpacing:'0.05em', textTransform:'uppercase', color:'var(--gray-500)' }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {BILLING_HISTORY.map((b, i) => (
+              <tr key={b.id} style={{ borderBottom:'1px solid var(--border)', background: i%2===0 ? '#fff' : '#fafafa' }}>
+                <td style={{ padding:'12px 16px', fontFamily:'Geist Mono,monospace', color:'var(--gray-500)', fontSize:11 }}>{b.id}</td>
+                <td style={{ padding:'12px 16px', fontWeight:500 }}>{b.period}</td>
+                <td style={{ padding:'12px 16px', fontFamily:'Geist Mono,monospace', fontWeight:500 }}>{b.amount}</td>
+                <td style={{ padding:'12px 16px', color:'var(--gray-600)' }}>{b.method}</td>
+                <td style={{ padding:'12px 16px', color:'var(--gray-500)' }}>{b.date}</td>
+                <td style={{ padding:'12px 16px' }}><Badge color="green">{b.status}</Badge></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {/* Payment modal */}
+      {paying && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.4)', zIndex:300, display:'flex', alignItems:'center', justifyContent:'center' }} onClick={() => setPaying(false)}>
+          <div style={{ background:'#fff', borderRadius:24, padding:36, width:420, boxShadow:'0 24px 80px rgba(0,0,0,0.15)' }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontWeight:600, fontSize:18, marginBottom:4 }}>Complete Payment</div>
+            <div style={{ fontSize:13, color:'var(--gray-500)', marginBottom:24 }}>Home Fiber 100Mbps — May 2025</div>
+            <div style={{ background:'var(--gray-50)', borderRadius:12, padding:'16px', marginBottom:20, textAlign:'center' }}>
+              <div style={{ fontSize:11, color:'var(--gray-500)', marginBottom:4 }}>AMOUNT DUE</div>
+              <div style={{ fontFamily:'Geist Mono,monospace', fontSize:32, fontWeight:500 }}>Rs. 1,499</div>
+            </div>
+            <div style={{ display:'flex', flexDirection:'column', gap:10, marginBottom:20 }}>
+              {['eSewa','Khalti','Bank Transfer'].map(m => (
+                <button key={m} onClick={() => setMethod(m)} style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 16px', borderRadius:12, border: method===m ? '1.5px solid var(--green)' : '1px solid var(--border)', background: method===m ? 'var(--green-50)' : '#fff', cursor:'pointer', fontFamily:'Inter,sans-serif' }}>
+                  <div style={{ width:24, height:24, borderRadius:6, background:'var(--green-50)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                    <Icon name="credit-card" size={12} color="var(--green-700)" />
+                  </div>
+                  <span style={{ fontSize:13, fontWeight:500, color:'#0d0d0d' }}>{m}</span>
+                  {method===m && <Icon name="check" size={13} color="var(--green-700)" style={{ marginLeft:'auto' }} />}
+                </button>
+              ))}
+            </div>
+            <div style={{ display:'flex', gap:8 }}>
+              <Btn variant="outline" style={{ flex:1, justifyContent:'center' }} onClick={() => setPaying(false)}>Cancel</Btn>
+              <Btn style={{ flex:2, justifyContent:'center' }} size="md" onClick={() => { setPaying(false); setPaid(true); }}>
+                Confirm Payment
+              </Btn>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── SUPPORT TICKETS ── */
+function SupportTickets() {
+  const [tickets, setTickets] = useState(MY_TICKETS);
+  const [creating, setCreating] = useState(false);
+  const [form, setForm] = useState({ issue:'', type:'', message:'' });
+  const [submitted, setSubmitted] = useState(false);
+  return (
+    <div style={{ padding:24, overflowY:'auto', height:'100%', display:'flex', flexDirection:'column', gap:16 }}>
+      <div style={{ display:'flex', justifyContent:'flex-end' }}>
+        <Btn onClick={() => { setCreating(true); setSubmitted(false); }}>
+          <Icon name="plus" size={13} color="#0d0d0d" /> New Ticket
+        </Btn>
+      </div>
+      {tickets.map(t => (
+        <div key={t.id} style={{ background:'#fff', border:'1px solid var(--border)', borderRadius:16, padding:'22px 24px', boxShadow:'var(--shadow-sm)' }}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:12 }}>
+            <div>
+              <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:4 }}>
+                <span style={{ fontFamily:'Geist Mono,monospace', fontSize:11, color:'var(--gray-500)' }}>{t.id}</span>
+                <Badge color={t.priority==='high'?'red':t.priority==='medium'?'yellow':'gray'}>{t.priority}</Badge>
+              </div>
+              <div style={{ fontWeight:600, fontSize:15, color:'#0d0d0d' }}>{t.issue}</div>
+              <div style={{ fontSize:11, color:'var(--gray-400)', marginTop:3 }}>Opened {t.created}</div>
+            </div>
+            <Badge color={t.status==='open'?'red':t.status==='in-progress'?'yellow':'green'}>{t.status}</Badge>
+          </div>
+          {t.response && (
+            <div style={{ background:'var(--green-50)', border:'1px solid rgba(24,226,153,0.2)', borderRadius:10, padding:'12px 14px', display:'flex', gap:10 }}>
+              <Icon name="message-circle" size={14} color="var(--green-700)" />
+              <div>
+                <div style={{ fontSize:10, fontWeight:600, color:'var(--green-700)', letterSpacing:'0.05em', textTransform:'uppercase', marginBottom:3 }}>Support Response</div>
+                <div style={{ fontSize:13, color:'var(--gray-700)' }}>{t.response}</div>
+              </div>
+            </div>
+          )}
+        </div>
+      ))}
+      {/* New ticket modal */}
+      {creating && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.4)', zIndex:300, display:'flex', alignItems:'center', justifyContent:'center' }} onClick={() => setCreating(false)}>
+          <div style={{ background:'#fff', borderRadius:24, padding:36, width:480, boxShadow:'0 24px 80px rgba(0,0,0,0.15)' }} onClick={e => e.stopPropagation()}>
+            {submitted ? (
+              <div style={{ textAlign:'center', padding:'20px 0' }}>
+                <Icon name="check-circle" size={48} color="var(--green-700)" />
+                <div style={{ fontWeight:600, fontSize:18, margin:'16px 0 8px' }}>Ticket submitted!</div>
+                <div style={{ fontSize:13, color:'var(--gray-600)', marginBottom:24 }}>Our team will respond within 2 hours.</div>
+                <Btn onClick={() => setCreating(false)}>Done</Btn>
+              </div>
+            ) : (
+              <>
+                <div style={{ fontWeight:600, fontSize:18, marginBottom:20 }}>New Support Ticket</div>
+                <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+                  <div>
+                    <div style={{ fontSize:10, fontWeight:600, letterSpacing:'0.06em', textTransform:'uppercase', color:'var(--gray-500)', marginBottom:6 }}>Issue Type</div>
+                    <select value={form.type} onChange={e => setForm(f=>({...f,type:e.target.value}))} style={{ width:'100%', border:'1px solid var(--border-md)', borderRadius:9999, padding:'11px 14px', fontSize:13, outline:'none', color: form.type?'#0d0d0d':'var(--gray-400)', background:'#fff' }}>
+                      <option value="">Select issue type…</option>
+                      {['Connection down','Slow speed','Billing issue','Equipment problem','Other'].map(o => <option key={o}>{o}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <div style={{ fontSize:10, fontWeight:600, letterSpacing:'0.06em', textTransform:'uppercase', color:'var(--gray-500)', marginBottom:6 }}>Subject</div>
+                    <input value={form.issue} onChange={e => setForm(f=>({...f,issue:e.target.value}))} placeholder="Brief description of your issue" style={{ width:'100%', border:'1px solid var(--border-md)', borderRadius:9999, padding:'11px 14px', fontSize:13, outline:'none', color:'#0d0d0d' }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize:10, fontWeight:600, letterSpacing:'0.06em', textTransform:'uppercase', color:'var(--gray-500)', marginBottom:6 }}>Details</div>
+                    <textarea value={form.message} onChange={e => setForm(f=>({...f,message:e.target.value}))} placeholder="Describe the issue in detail…" rows={4} style={{ width:'100%', border:'1px solid var(--border-md)', borderRadius:12, padding:'12px 14px', fontSize:13, outline:'none', color:'#0d0d0d', resize:'none' }} />
+                  </div>
+                </div>
+                <div style={{ display:'flex', gap:8, marginTop:20, justifyContent:'flex-end' }}>
+                  <Btn variant="outline" onClick={() => setCreating(false)}>Cancel</Btn>
+                  <Btn onClick={() => { if(form.issue && form.type) { setSubmitted(true); setTickets(ts => [{id:'T-'+(1043+ts.length), issue:form.issue, status:'open', priority:'medium', created:'2025-04-27', response:null}, ...ts]); }}}>Submit Ticket</Btn>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── SPEED TEST ── */
+function SpeedTest() {
+  const [state, setState] = useState('idle'); // idle, testing, done
+  const [progress, setProgress] = useState(0);
+  const [dl, setDl] = useState(0);
+  const [ul, setUl] = useState(0);
+  const [ping, setPing] = useState(0);
+
+  const runTest = () => {
+    setState('testing'); setProgress(0); setDl(0); setUl(0); setPing(0);
+    let p = 0;
+    const t = setInterval(() => {
+      p += 2;
+      setProgress(p);
+      if (p < 50) setDl(Math.round(p * 2));
+      else if (p < 80) { setDl(94); setUl(Math.round((p-50) * 3)); }
+      else { setDl(94); setUl(92); setPing(2); }
+      if (p >= 100) { clearInterval(t); setState('done'); }
+    }, 50);
+  };
+
+  const r = progress / 100;
+  const circumference = 2 * Math.PI * 80;
+
+  return (
+    <div style={{ padding:24, overflowY:'auto', height:'100%', display:'flex', flexDirection:'column', gap:16 }}>
+      <div style={{ background:'#fff', border:'1px solid var(--border)', borderRadius:20, padding:'40px', textAlign:'center', boxShadow:'var(--shadow-sm)' }}>
+        {/* Gauge */}
+        <div style={{ position:'relative', width:200, height:200, margin:'0 auto 24px' }}>
+          <svg width="200" height="200" viewBox="0 0 200 200">
+            <circle cx="100" cy="100" r="80" fill="none" stroke="var(--gray-100)" strokeWidth="8"/>
+            <circle cx="100" cy="100" r="80" fill="none" stroke="var(--green)" strokeWidth="8"
+              strokeDasharray={`${r * circumference} ${circumference}`}
+              strokeLinecap="round" transform="rotate(-90 100 100)" style={{ transition:'stroke-dasharray 0.1s' }}/>
+            <circle cx="100" cy="100" r="60" fill="var(--green-50)"/>
+          </svg>
+          <div style={{ position:'absolute', inset:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }}>
+            {state === 'idle' && <div style={{ fontSize:13, color:'var(--gray-500)' }}>Ready</div>}
+            {state === 'testing' && <>
+              <div style={{ fontFamily:'Geist Mono,monospace', fontSize:28, fontWeight:500, color:'var(--green-700)' }}>{progress}%</div>
+              <div style={{ fontSize:11, color:'var(--gray-500)', marginTop:2 }}>Testing…</div>
+            </>}
+            {state === 'done' && <>
+              <div style={{ fontFamily:'Geist Mono,monospace', fontSize:28, fontWeight:600, color:'var(--green-700)' }}>{dl}</div>
+              <div style={{ fontSize:11, color:'var(--gray-500)' }}>Mbps Down</div>
+            </>}
+          </div>
+        </div>
+        {/* Results */}
+        <div style={{ display:'flex', justifyContent:'center', gap:32, marginBottom:28 }}>
+          {[['download','Download',dl,'Mbps'],['upload','Upload',ul,'Mbps'],['activity','Ping',ping,'ms']].map(([icon,label,val,unit]) => (
+            <div key={label} style={{ textAlign:'center' }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:5, marginBottom:4 }}>
+                <Icon name={icon} size={13} color="var(--gray-400)" />
+                <span style={{ fontSize:10, color:'var(--gray-500)', textTransform:'uppercase', letterSpacing:'0.05em', fontWeight:600 }}>{label}</span>
+              </div>
+              <div style={{ fontFamily:'Geist Mono,monospace', fontSize:22, fontWeight:500, color: val>0 ? 'var(--green-700)' : 'var(--gray-300)' }}>{val || '—'}</div>
+              <div style={{ fontSize:10, color:'var(--gray-400)' }}>{unit}</div>
+            </div>
+          ))}
+        </div>
+        <button onClick={runTest} disabled={state==='testing'} style={{ background: state==='testing' ? 'var(--gray-200)' : 'var(--green)', border:'none', borderRadius:9999, padding:'13px 36px', fontSize:14, fontWeight:600, cursor: state==='testing' ? 'not-allowed' : 'pointer', fontFamily:'Inter,sans-serif', color: state==='testing' ? 'var(--gray-500)' : '#0d0d0d', transition:'all 0.15s' }}>
+          {state === 'idle' ? 'Start Speed Test' : state === 'testing' ? 'Testing…' : 'Test Again'}
+        </button>
+        {state === 'done' && (
+          <div style={{ marginTop:20, padding:'14px 20px', background:'var(--green-50)', borderRadius:12, display:'inline-block' }}>
+            <div style={{ fontSize:13, color:'var(--green-700)', fontWeight:500 }}>
+              Your connection is performing at expected speeds for your Home Fiber 100Mbps plan.
+            </div>
+          </div>
+        )}
+      </div>
+      {/* History */}
+      <div style={{ background:'#fff', border:'1px solid var(--border)', borderRadius:16, padding:'22px 24px', boxShadow:'var(--shadow-sm)' }}>
+        <div style={{ fontWeight:600, fontSize:14, marginBottom:14 }}>Speed Test History</div>
+        <div style={{ display:'flex', flexDirection:'column', gap:1 }}>
+          {[
+            { date:'Apr 27, 2025', dl:94, ul:92, ping:2 },
+            { date:'Apr 20, 2025', dl:97, ul:95, ping:3 },
+            { date:'Apr 12, 2025', dl:89, ul:88, ping:2 },
+            { date:'Apr 5, 2025', dl:93, ul:91, ping:2 },
+          ].map((r, i) => (
+            <div key={i} style={{ display:'flex', alignItems:'center', gap:20, padding:'10px 0', borderBottom: i<3 ? '1px solid var(--border)' : 'none' }}>
+              <div style={{ fontSize:12, color:'var(--gray-500)', minWidth:100 }}>{r.date}</div>
+              <div style={{ display:'flex', gap:24, flex:1 }}>
+                {[['Download',r.dl,'Mbps'],['Upload',r.ul,'Mbps'],['Ping',r.ping,'ms']].map(([l,v,u]) => (
+                  <div key={l} style={{ textAlign:'center' }}>
+                    <div style={{ fontSize:10, color:'var(--gray-400)' }}>{l}</div>
+                    <div style={{ fontFamily:'Geist Mono,monospace', fontSize:13, fontWeight:500, color:'var(--green-700)' }}>{v} <span style={{ fontSize:10, color:'var(--gray-400)' }}>{u}</span></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── PROFILE ── */
+function Profile() {
+  const [editing, setEditing] = useState(false);
+  const [pw, setPw] = useState({ current:'', new1:'', new2:'' });
+  return (
+    <div style={{ padding:24, overflowY:'auto', height:'100%', display:'flex', flexDirection:'column', gap:16 }}>
+      <div style={{ background:'#fff', border:'1px solid var(--border)', borderRadius:16, padding:'24px', boxShadow:'var(--shadow-sm)', display:'flex', alignItems:'center', gap:20 }}>
+        <div style={{ width:72, height:72, borderRadius:'50%', background:'linear-gradient(135deg,var(--green-100),var(--green-50))', display:'flex', alignItems:'center', justifyContent:'center', fontSize:24, fontWeight:600, color:'var(--green-700)', flexShrink:0 }}>RS</div>
+        <div style={{ flex:1 }}>
+          <div style={{ fontWeight:600, fontSize:20, marginBottom:3 }}>{USER.name}</div>
+          <div style={{ fontSize:13, color:'var(--gray-500)', marginBottom:6 }}>{USER.email}</div>
+          <div style={{ display:'flex', gap:10 }}>
+            <Badge color="green">ACTIVE</Badge>
+            <Badge color="gray">{USER.customerId}</Badge>
+            <Badge color="blue">{USER.district}</Badge>
+          </div>
+        </div>
+        <Btn variant="outline" onClick={() => setEditing(!editing)}>
+          <Icon name="edit-2" size={12} color="var(--gray-600)" /> {editing ? 'Cancel' : 'Edit Profile'}
+        </Btn>
+      </div>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
+        <div style={{ background:'#fff', border:'1px solid var(--border)', borderRadius:16, padding:'22px 24px', boxShadow:'var(--shadow-sm)' }}>
+          <div style={{ fontWeight:600, fontSize:14, marginBottom:16 }}>Account Information</div>
+          <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+            {[['Full Name',USER.name],['Phone',USER.phone],['Email',USER.email],['District',USER.district],['Address',USER.address],['Member Since',USER.joined]].map(([label, val]) => (
+              <div key={label}>
+                <div style={{ fontSize:10, fontWeight:600, letterSpacing:'0.06em', textTransform:'uppercase', color:'var(--gray-500)', marginBottom:5 }}>{label}</div>
+                {editing && label !== 'Member Since' ? (
+                  <input defaultValue={val} style={{ width:'100%', border:'1px solid var(--border-md)', borderRadius:9999, padding:'9px 14px', fontSize:13, outline:'none', color:'#0d0d0d' }} />
+                ) : (
+                  <div style={{ fontSize:14, color:'#0d0d0d', fontWeight:500 }}>{val}</div>
+                )}
+              </div>
+            ))}
+          </div>
+          {editing && (
+            <div style={{ marginTop:16, display:'flex', gap:8 }}>
+              <Btn onClick={() => setEditing(false)}>Save Changes</Btn>
+              <Btn variant="outline" onClick={() => setEditing(false)}>Cancel</Btn>
+            </div>
+          )}
+        </div>
+        <div style={{ background:'#fff', border:'1px solid var(--border)', borderRadius:16, padding:'22px 24px', boxShadow:'var(--shadow-sm)' }}>
+          <div style={{ fontWeight:600, fontSize:14, marginBottom:16 }}>Change Password</div>
+          <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+            {[['Current Password','current'],['New Password','new1'],['Confirm New Password','new2']].map(([label, key]) => (
+              <div key={key}>
+                <div style={{ fontSize:10, fontWeight:600, letterSpacing:'0.06em', textTransform:'uppercase', color:'var(--gray-500)', marginBottom:5 }}>{label}</div>
+                <input type="password" value={pw[key]} onChange={e => setPw(p=>({...p,[key]:e.target.value}))} placeholder="••••••••" style={{ width:'100%', border:'1px solid var(--border-md)', borderRadius:9999, padding:'9px 14px', fontSize:13, outline:'none', color:'#0d0d0d' }} />
+              </div>
+            ))}
+            <Btn style={{ marginTop:4 }}>Update Password</Btn>
+          </div>
+          <div style={{ marginTop:24, paddingTop:20, borderTop:'1px solid var(--border)' }}>
+            <div style={{ fontWeight:600, fontSize:13, marginBottom:12 }}>Notification Preferences</div>
+            <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+              {[['SMS billing reminders','sms',true],['Email payment receipts','email',true],['Outage notifications','outage',true],['Promotional offers','promo',false]].map(([label, key, def]) => (
+                <label key={key} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', cursor:'pointer' }}>
+                  <span style={{ fontSize:13, color:'var(--gray-700)' }}>{label}</span>
+                  <Toggle defaultChecked={def} />
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Toggle({ defaultChecked }) {
+  const [on, setOn] = useState(defaultChecked);
+  return (
+    <div onClick={() => setOn(!on)} style={{ width:36, height:20, borderRadius:9999, background: on ? 'var(--green)' : 'var(--gray-200)', position:'relative', cursor:'pointer', transition:'background 0.2s', flexShrink:0 }}>
+      <div style={{ position:'absolute', top:2, left: on ? 18 : 2, width:16, height:16, borderRadius:'50%', background:'#fff', boxShadow:'var(--shadow-sm)', transition:'left 0.2s' }}></div>
+    </div>
+  );
+}
+
+/* ── LOGIN ── */
+function Login({ onLogin }) {
+  const [id, setId] = useState('');
+  const [pw, setPw] = useState('');
+  const [err, setErr] = useState(false);
+  const submit = () => {
+    if ((id === 'C001' || id === 'ramesh@gmail.com') && pw === 'pass123') { onLogin(); }
+    else { setErr(true); setTimeout(() => setErr(false), 2500); }
+  };
+  return (
+    <div style={{ height:'100vh', display:'flex', overflow:'hidden' }}>
+      {/* Left panel */}
+      <div style={{ flex:1, background:'linear-gradient(155deg,#0a7f55,#0d4f3c)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:48, color:'#fff' }}>
+        <Logo dark />
+        <div style={{ marginTop:48, textAlign:'center' }}>
+          <h1 style={{ fontSize:32, fontWeight:600, letterSpacing:'-0.025em', lineHeight:1.2, marginBottom:12 }}>Manage your connection from anywhere</h1>
+          <p style={{ fontSize:15, opacity:0.7, lineHeight:1.7, maxWidth:320 }}>Pay bills, check speeds, upgrade plans, and get support — all in one place.</p>
+        </div>
+        <div style={{ marginTop:48, display:'flex', flexDirection:'column', gap:12, width:'100%', maxWidth:280 }}>
+          {[
+            { icon:'credit-card', text:'Pay bills with eSewa or Khalti' },
+            { icon:'trending-up', text:'Upgrade or change your plan' },
+            { icon:'zap', text:'Run speed tests anytime' },
+            { icon:'message-circle', text:'Open and track support tickets' },
+          ].map(({ icon, text }) => (
+            <div key={text} style={{ display:'flex', gap:12, alignItems:'center' }}>
+              <div style={{ width:32, height:32, borderRadius:8, background:'rgba(255,255,255,0.12)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                <Icon name={icon} size={15} color="rgba(255,255,255,0.8)" />
+              </div>
+              <div style={{ fontSize:13, opacity:0.8 }}>{text}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+      {/* Right panel */}
+      <div style={{ width:480, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', padding:48 }}>
+        <div style={{ width:'100%', maxWidth:360 }}>
+          <div style={{ marginBottom:32 }}>
+            <h2 style={{ fontSize:24, fontWeight:600, letterSpacing:'-0.02em', marginBottom:6 }}>Sign in to your account</h2>
+            <div style={{ fontSize:13, color:'var(--gray-500)' }}>Enter your customer ID or email to continue.</div>
+          </div>
+          <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+            <div>
+              <div style={{ fontSize:10, fontWeight:600, letterSpacing:'0.06em', textTransform:'uppercase', color:'var(--gray-500)', marginBottom:6 }}>Customer ID or Email</div>
+              <input value={id} onChange={e => setId(e.target.value)} placeholder="e.g. C001 or you@email.com" style={{ width:'100%', border:'1px solid var(--border-md)', borderRadius:9999, padding:'12px 16px', fontSize:13, outline:'none', color:'#0d0d0d' }} />
+            </div>
+            <div>
+              <div style={{ fontSize:10, fontWeight:600, letterSpacing:'0.06em', textTransform:'uppercase', color:'var(--gray-500)', marginBottom:6 }}>Password</div>
+              <input type="password" value={pw} onChange={e => setPw(e.target.value)} onKeyDown={e => e.key==='Enter'&&submit()} placeholder="••••••••" style={{ width:'100%', border:`1px solid ${err?'#ef4444':'var(--border-md)'}`, borderRadius:9999, padding:'12px 16px', fontSize:13, outline:'none', color:'#0d0d0d' }} />
+            </div>
+            {err && <div style={{ fontSize:12, color:'#ef4444', textAlign:'center' }}>Invalid credentials. Try C001 / pass123</div>}
+            <button onClick={submit} style={{ background:'var(--green)', border:'none', borderRadius:9999, padding:'13px', fontSize:14, fontWeight:600, cursor:'pointer', fontFamily:'Inter,sans-serif', color:'#0d0d0d', marginTop:4 }}>Sign In</button>
+          </div>
+          <div style={{ textAlign:'center', marginTop:16, fontSize:11, color:'var(--gray-400)' }}>Demo: C001 / pass123</div>
+          <div style={{ marginTop:28, paddingTop:20, borderTop:'1px solid var(--border)', textAlign:'center' }}>
+            <div style={{ fontSize:13, color:'var(--gray-500)', marginBottom:12 }}>Don't have an account yet?</div>
+            <a href="index.html" style={{ fontSize:13, fontWeight:600, color:'var(--green-700)', textDecoration:'none' }}>Get Connected →</a>
+          </div>
+          <div style={{ textAlign:'center', marginTop:16 }}>
+            <a href="admin.html" style={{ fontSize:11, color:'var(--gray-400)', textDecoration:'none' }}>Admin login →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── APP ── */
+const PAGES = { overview:Overview, plan:MyPlan, billing:Billing, tickets:SupportTickets, speedtest:SpeedTest, profile:Profile };
+const TITLES = { overview:'Overview', plan:'My Plan', billing:'Billing', tickets:'Support', speedtest:'Speed Test', profile:'My Profile' };
+
+function App() {
+  const [authed, setAuthed] = useState(false);
+  const [page, setPage] = useState('overview');
+  if (!authed) return <Login onLogin={() => setAuthed(true)} />;
+  const PageComp = PAGES[page] || Overview;
+  return (
+    <div style={{ display:'flex', height:'100vh', overflow:'hidden' }}>
+      <Sidebar page={page} setPage={setPage} onLogout={() => setAuthed(false)} />
+      <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden' }}>
+        <TopBar title={TITLES[page]} />
+        <div style={{ flex:1, overflow:'hidden' }}>
+          <PageComp setPage={setPage} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
