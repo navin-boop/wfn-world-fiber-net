@@ -109,16 +109,16 @@ export default function Solutions() {
           {solutions.map((sol, i) => (
             <div
               key={i}
-              className="solution-card rounded-2xl p-6 border group hover:shadow-lg transition-shadow duration-300"
+              className="solution-card rounded-2xl p-8 border group hover:shadow-lg transition-shadow duration-300"
               style={{ border: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)' }}
             >
               <div
-                className="w-11 h-11 rounded-xl flex items-center justify-center mb-5"
+                className="w-14 h-14 rounded-2xl flex items-center justify-center mb-6"
                 style={{ backgroundColor: sol.bg }}
               >
-                <sol.icon size={20} style={{ color: sol.color }} />
+                <sol.icon size={24} style={{ color: sol.color }} />
               </div>
-              <h3 className="font-bold text-base mb-2" style={{ color: 'var(--black)' }}>
+              <h3 className="font-bold text-lg mb-3" style={{ color: 'var(--black)' }}>
                 {sol.title}
               </h3>
               <p className="text-sm leading-relaxed" style={{ color: 'var(--gray-500)' }}>

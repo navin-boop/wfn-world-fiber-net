@@ -27,19 +27,22 @@ export default function CoverageBanner() {
     if (!sectionRef.current) return;
 
     const ctx = gsap.context(() => {
-      gsap.fromTo(sectionRef.current,
-        { opacity: 0, y: 40 },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 0.9,
-          ease: 'power3.out',
-          scrollTrigger: {
-            trigger: sectionRef.current,
-            start: 'top 75%',
-          },
-        }
-      );
+      const inner = sectionRef.current!.querySelector('.coverage-inner');
+      if (inner) {
+        gsap.fromTo(inner,
+          { opacity: 0, y: 30 },
+          {
+            opacity: 1,
+            y: 0,
+            duration: 0.9,
+            ease: 'power3.out',
+            scrollTrigger: {
+              trigger: sectionRef.current,
+              start: 'top 78%',
+            },
+          }
+        );
+      }
 
       // Pulse rings on active dots
       const activeDots = sectionRef.current!.querySelectorAll('.dot-active');
@@ -92,7 +95,7 @@ export default function CoverageBanner() {
       style={{ backgroundColor: 'var(--black)' }}
     >
       <div className="max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+        <div className="coverage-inner grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           {/* Left: text */}
           <div>
             <Badge variant="green" className="mb-6">Coverage Map</Badge>

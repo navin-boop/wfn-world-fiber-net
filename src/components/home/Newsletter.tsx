@@ -15,19 +15,22 @@ export default function Newsletter() {
     if (!sectionRef.current) return;
 
     const ctx = gsap.context(() => {
-      gsap.fromTo(sectionRef.current,
-        { opacity: 0, y: 40 },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 0.9,
-          ease: 'power3.out',
-          scrollTrigger: {
-            trigger: sectionRef.current,
-            start: 'top 80%',
-          },
-        }
-      );
+      const inner = sectionRef.current!.querySelector('.newsletter-inner');
+      if (inner) {
+        gsap.fromTo(inner,
+          { opacity: 0, y: 30 },
+          {
+            opacity: 1,
+            y: 0,
+            duration: 0.9,
+            ease: 'power3.out',
+            scrollTrigger: {
+              trigger: sectionRef.current,
+              start: 'top 82%',
+            },
+          }
+        );
+      }
     }, sectionRef);
 
     return () => ctx.revert();
@@ -41,7 +44,7 @@ export default function Newsletter() {
 
   return (
     <section ref={sectionRef} className="py-24 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-3xl mx-auto text-center">
+      <div className="newsletter-inner max-w-3xl mx-auto text-center">
         <SectionLabel className="mb-5">Stay Updated</SectionLabel>
         <h2 className="text-4xl font-bold mb-4" style={{ color: 'var(--black)' }}>
           Get the latest news & offers

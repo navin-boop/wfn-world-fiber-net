@@ -54,19 +54,22 @@ export default function Testimonials() {
     if (!sectionRef.current) return;
 
     const ctx = gsap.context(() => {
-      gsap.fromTo(sectionRef.current,
-        { opacity: 0, y: 30 },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 0.9,
-          ease: 'power3.out',
-          scrollTrigger: {
-            trigger: sectionRef.current,
-            start: 'top 78%',
-          },
-        }
-      );
+      const inner = sectionRef.current!.querySelector('.testimonials-inner');
+      if (inner) {
+        gsap.fromTo(inner,
+          { opacity: 0, y: 30 },
+          {
+            opacity: 1,
+            y: 0,
+            duration: 0.9,
+            ease: 'power3.out',
+            scrollTrigger: {
+              trigger: sectionRef.current,
+              start: 'top 80%',
+            },
+          }
+        );
+      }
     }, sectionRef);
 
     return () => ctx.revert();
@@ -111,6 +114,7 @@ export default function Testimonials() {
       style={{ backgroundColor: 'var(--gray-50)' }}
     >
       <div className="max-w-4xl mx-auto">
+        <div className="testimonials-inner">
         <div className="text-center mb-16">
           <SectionLabel className="mb-4">Customer Stories</SectionLabel>
           <h2 className="text-4xl sm:text-5xl font-bold" style={{ color: 'var(--black)' }}>
@@ -186,6 +190,7 @@ export default function Testimonials() {
               </div>
             </div>
           </div>
+        </div>
         </div>
       </div>
     </section>

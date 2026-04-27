@@ -14,15 +14,12 @@ export default function PageWrapper({ children, className = '' }: PageWrapperPro
   useEffect(() => {
     registerGSAP();
     if (!ref.current) return;
-    gsap.fromTo(
-      ref.current,
-      { opacity: 0, y: 18 },
-      { opacity: 1, y: 0, duration: 0.7, ease: 'power3.out' }
-    );
+    gsap.set(ref.current, { opacity: 0, y: 18 });
+    gsap.to(ref.current, { opacity: 1, y: 0, duration: 0.7, ease: 'power3.out', delay: 0.05 });
   }, []);
 
   return (
-    <div ref={ref} className={className} style={{ opacity: 0 }}>
+    <div ref={ref} className={className}>
       {children}
     </div>
   );
