@@ -7,6 +7,8 @@ import Badge from '@/components/Badge';
 import Btn from '@/components/Btn';
 import { PLANS } from '@/lib/plans';
 import { gsap, registerGSAP, ScrollTrigger } from '@/lib/gsap';
+import PackageRecommender from '@/components/home/PackageRecommender';
+import CostCalculator from '@/components/home/CostCalculator';
 
 const addons = [
   { name: 'Static IP Address', price: '200', desc: 'Dedicated IP for remote access, hosting, and business needs' },
@@ -106,6 +108,16 @@ export default function PackagesPage() {
               {period === 'monthly' ? 'Monthly' : 'Yearly (Save 2 months)'}
             </button>
           ))}
+        </div>
+      </section>
+
+      {/* AI Tools */}
+      <section className="py-8 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <PackageRecommender />
+            <CostCalculator />
+          </div>
         </div>
       </section>
 

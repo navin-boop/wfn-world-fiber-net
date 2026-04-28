@@ -75,8 +75,19 @@ export default function ContactPage() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    await fetch('/api/public/inquiry', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: form.name,
+        phone: form.phone,
+        email: form.email || undefined,
+        message: [form.district && `District: ${form.district}`, form.message].filter(Boolean).join('\n') || undefined,
+        source: form.inquiry,
+      }),
+    });
     setSubmitted(true);
   };
 

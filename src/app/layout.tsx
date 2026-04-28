@@ -1,15 +1,5 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
 import './globals.css';
-import Nav from '@/components/Nav';
-import Footer from '@/components/Footer';
-
-const inter = Inter({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-inter',
-  display: 'swap',
-});
 
 export const metadata: Metadata = {
   title: {
@@ -18,21 +8,19 @@ export const metadata: Metadata = {
   },
   description: 'High-speed fiber optic internet for homes and businesses across Bagmati Province, Nepal. Plans from Rs. 899/month with free installation.',
   keywords: ['fiber internet', 'Nepal ISP', 'broadband', 'Kathmandu', 'Nuwakot', 'Dhading', 'Gorkha'],
+  metadataBase: new URL('https://worldfibernet.net.np'),
+  openGraph: {
+    siteName: 'World Fiber Net',
+    locale: 'en_US',
+    type: 'website',
+  },
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={inter.variable}>
+    <html lang="en">
       <body className="min-h-screen flex flex-col antialiased">
-        <Nav />
-        <main className="flex-1">
-          {children}
-        </main>
-        <Footer />
+        {children}
       </body>
     </html>
   );

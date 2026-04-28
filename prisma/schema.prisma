@@ -1,0 +1,143 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      String   @default("VIEWER")
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Package {
+  id        String   @id @default(cuid())
+  name      String
+  speed     String
+  unit      String
+  price     String
+  badge     String
+  features  String
+  popular   Boolean  @default(false)
+  active    Boolean  @default(true)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Offer {
+  id          String    @id @default(cuid())
+  title       String
+  description String
+  imageUrl    String?
+  ctaText     String    @default("Get This Offer")
+  ctaLink     String    @default("/contact")
+  price       String?
+  startDate   DateTime?
+  endDate     DateTime?
+  active      Boolean   @default(true)
+  placement   String    @default("[\"homepage\"]")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model PopupOffer {
+  id          String   @id @default(cuid())
+  heading     String   @default("Limited Time Offer!")
+  description String   @default("Get fiber internet with free installation this month.")
+  imageUrl    String?
+  buttonText  String   @default("Claim Offer")
+  buttonLink  String   @default("/contact")
+  delay       Int      @default(3000)
+  frequency   String   @default("once")
+  active      Boolean  @default(false)
+  updatedAt   DateTime @updatedAt
+}
+
+model FAQ {
+  id       String  @id @default(cuid())
+  question String
+  answer   String
+  category String  @default("General")
+  order    Int     @default(0)
+  active   Boolean @default(true)
+}
+
+model Testimonial {
+  id       String  @id @default(cuid())
+  name     String
+  location String
+  text     String
+  plan     String?
+  stars    Int     @default(5)
+  active   Boolean @default(true)
+  order    Int     @default(0)
+}
+
+model CoverageArea {
+  id       String @id @default(cuid())
+  name     String
+  district String
+  status   String @default("active")
+  order    Int    @default(0)
+}
+
+model Lead {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String
+  email     String?
+  message   String?
+  type      String   @default("contact")
+  status    String   @default("new")
+  assignee  String?
+  notes     String?
+  source    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SupportTicket {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String
+  email     String?
+  issue     String
+  status    String   @default("open")
+  priority  String   @default("normal")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SiteSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+model WhatsAppConversation {
+  id        String            @id @default(cuid())
+  phone     String
+  name      String?
+  status    String            @default("new")
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  messages  WhatsAppMessage[]
+}
+
+model WhatsAppMessage {
+  id             String               @id @default(cuid())
+  conversationId String
+  conversation   WhatsAppConversation @relation(fields: [conversationId], references: [id])
+  from           String
+  text           String
+  createdAt      DateTime             @default(now())
+}
